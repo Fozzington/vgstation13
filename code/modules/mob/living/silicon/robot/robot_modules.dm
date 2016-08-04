@@ -2,7 +2,7 @@
 	name = "robot module"
 	icon = 'icons/obj/module.dmi'
 	//icon_state = "std_module"
-	w_class = 100.0
+	w_class = W_CLASS_GIANT
 	item_state = "electronic"
 	flags = FPRINT
 	siemens_coefficient = 1
@@ -15,6 +15,7 @@
 	var/list/sensor_augs
 	var/languages
 	var/list/added_languages
+	var/list/upgrades = list()
 
 /obj/item/weapon/robot_module/proc/recharge_consumable()
 	return
@@ -38,7 +39,7 @@
 
 	languages = list(	LANGUAGE_GALACTIC_COMMON = 1, LANGUAGE_TRADEBAND = 1, LANGUAGE_VOX = 0,
 						LANGUAGE_ROOTSPEAK = 0, LANGUAGE_GREY = 0, LANGUAGE_CLATTER = 0,
-						LANGUAGE_MONKEY = 0, LANGUAGE_UNATHI = 0, LANGUAGE_SIIK_TAJR = 0,
+						LANGUAGE_MONKEY = 0, LANGUAGE_UNATHI = 0, LANGUAGE_CATBEAST = 0,
 						LANGUAGE_SKRELLIAN = 0, LANGUAGE_GUTTER = 0, LANGUAGE_MONKEY = 0,
 						LANGUAGE_MOUSE = 0, LANGUAGE_HUMAN = 0)
 	added_languages = list()
@@ -52,6 +53,11 @@
 //		src.jetpack.name = "Placeholder Upgrade Item"
 	return
 
+obj/item/weapon/robot_module/proc/fix_modules() //call this proc to enable clicking the slot of a module to equip it.
+	for(var/obj/item/I in modules)
+		I.mouse_opacity = 2
+	if(emag)
+		emag.mouse_opacity = 2
 
 /obj/item/weapon/robot_module/proc/respawn_consumable(var/mob/living/silicon/robot/R)
 	return
@@ -90,7 +96,7 @@
 	O.amount = 15
 	src.modules += O
 
-	return
+	fix_modules()
 
 /obj/item/weapon/robot_module/standard/respawn_consumable(var/mob/living/silicon/robot/R)
 	// Recharge baton battery
@@ -105,11 +111,11 @@
 	for (var/T in what)
 		if (!(locate(T) in src.modules))
 			src.modules -= null
-			var/O = new T(src)
+			var/obj/item/stack/O = new T(src)
 			if(istype(O,/obj/item/stack/medical))
-				O:max_amount = 15
+				O.max_amount = 15
 			src.modules += O
-			O:amount = 1
+			O.amount = 1
 	return
 
 
@@ -141,7 +147,7 @@
 	src.emag = new /obj/item/weapon/reagent_containers/spray(src)
 	sensor_augs = list("Medical", "Disable")
 
-	src.emag.reagents.add_reagent("pacid", 250)
+	src.emag.reagents.add_reagent(PACID, 250)
 	src.emag.name = "Polyacid spray"
 
 	var/obj/item/stack/medical/advanced/bruise_pack/B = new /obj/item/stack/medical/advanced/bruise_pack(src)
@@ -159,7 +165,7 @@
 	S.amount = 10
 	src.modules += S
 
-	return
+	fix_modules()
 
 /obj/item/weapon/robot_module/medical/respawn_consumable(var/mob/living/silicon/robot/R)
 	var/list/what = list (
@@ -170,11 +176,11 @@
 	for (var/T in what)
 		if (!(locate(T) in src.modules))
 			src.modules -= null
-			var/O = new T(src)
+			var/obj/item/stack/O = new T(src)
 			if(istype(O,/obj/item/stack/medical))
-				O:max_amount = 15
+				O.max_amount = 15
 			src.modules += O
-			O:amount = 1
+			O.amount = 1
 	return
 
 
@@ -210,7 +216,7 @@
 	W.max_amount = 50
 	src.modules += W
 
-	return
+	fix_modules()
 
 
 /obj/item/weapon/robot_module/engineering/respawn_consumable(var/mob/living/silicon/robot/R)
@@ -220,11 +226,11 @@
 	for (var/T in what)
 		if (!(locate(T) in src.modules))
 			src.modules -= null
-			var/O = new T(src)
+			var/obj/item/stack/O = new T(src)
 			if(istype(O,/obj/item/stack/cable_coil))
-				O:max_amount = 50
+				O.max_amount = 50
 			src.modules += O
-			O:amount = 1
+			O.amount = 1
 	return
 
 /obj/item/weapon/robot_module/engineering/recharge_consumable(var/mob/living/silicon/robot/R)
@@ -239,14 +245,14 @@
 		respawn_consumable(R)
 		var/list/um = R.contents|R.module.modules
 		// ^ makes sinle list of active (R.contents) and inactive modules (R.module.modules)
-		for(var/obj/O in um)
+		for(var/obj/item/stack/O in um)
 			// Engineering
 			if(istype(O,/obj/item/stack/cable_coil))
-				if(O:amount < 50)
-					O:amount += 1
+				if(O.amount < 50)
+					O.amount += 1
 					R.cell.use(50) 		//Take power from the borg...
-				if(O:amount > 50)
-					O:amount = 50
+				if(O.amount > 50)
+					O.amount = 50
 
 
 /obj/item/weapon/robot_module/security
@@ -262,7 +268,7 @@
 	src.modules += new /obj/item/weapon/crowbar(src)
 	src.emag = new /obj/item/weapon/gun/energy/laser/cyborg(src)
 	sensor_augs = list("Security", "Medical", "Disable")
-	return
+	fix_modules()
 
 /obj/item/weapon/robot_module/security/respawn_consumable(var/mob/living/silicon/robot/R)
 	// Recharge baton battery
@@ -286,9 +292,9 @@
 	src.modules += new /obj/item/weapon/crowbar(src)
 	src.emag = new /obj/item/weapon/reagent_containers/spray(src)
 
-	src.emag.reagents.add_reagent("lube", 250)
+	src.emag.reagents.add_reagent(LUBE, 250)
 	src.emag.name = "Lube spray"
-	return
+	fix_modules()
 
 
 
@@ -300,7 +306,7 @@
 	languages = list(
 					LANGUAGE_GALACTIC_COMMON	= 1,
 					LANGUAGE_UNATHI		= 1,
-					LANGUAGE_SIIK_TAJR	= 1,
+					LANGUAGE_CATBEAST	= 1,
 					LANGUAGE_SKRELLIAN	= 1,
 					LANGUAGE_ROOTSPEAK	= 1,
 					LANGUAGE_TRADEBAND	= 1,
@@ -325,40 +331,23 @@
 
 	src.modules += new /obj/item/weapon/reagent_containers/food/drinks/shaker(src)
 
-	src.modules += new /obj/item/weapon/dice/d2(src)
-
-	src.modules += new /obj/item/weapon/dice/d4(src)
-
-	src.modules += new /obj/item/weapon/dice(src)
-
-	src.modules += new /obj/item/weapon/dice/d8(src)
-
-	src.modules += new /obj/item/weapon/dice/d10(src)
-
-	src.modules += new /obj/item/weapon/dice/d00(src)
-
-	src.modules += new /obj/item/weapon/dice/d12(src)
-
-	src.modules += new /obj/item/weapon/dice/d20(src)
+	src.modules += new /obj/item/weapon/dice/borg(src)
 
 	src.modules += new /obj/item/weapon/crowbar(src)
-
-
 
 	src.emag = new /obj/item/weapon/reagent_containers/food/drinks/beer(src)
 
 	var/datum/reagents/R = new/datum/reagents(50)
 	src.emag.reagents = R
 	R.my_atom = src.emag
-	R.add_reagent("beer2", 50)
+	R.add_reagent(BEER2, 50)
 	src.emag.name = "Mickey Finn's Special Brew"
-	return
+	fix_modules()
 
 
 
 /obj/item/weapon/robot_module/miner
-	name = "miner robot module"
-
+	name = "supply robot module"
 
 /obj/item/weapon/robot_module/miner/New()
 	..()
@@ -371,8 +360,30 @@
 	src.modules += new /obj/item/weapon/crowbar(src)
 	sensor_augs = list("Mesons", "Disable")
 //		src.modules += new /obj/item/weapon/pickaxe/shovel(src) Uneeded due to buffed drill
-	return
 
+	var/obj/item/device/destTagger/tag = new /obj/item/device/destTagger(src)
+	tag.mode = 1 //For editing the tag list
+	src.modules += tag
+
+	var/obj/item/stack/package_wrap/W = new /obj/item/stack/package_wrap(src)
+	W.amount = 24
+	W.max_amount = 24
+	src.modules += W
+
+	fix_modules()
+
+/obj/item/weapon/robot_module/miner/respawn_consumable(var/mob/living/silicon/robot/R)
+	var/list/what = list (
+		/obj/item/stack/package_wrap
+	)
+	for (var/T in what)
+		if (!(locate(T) in src.modules))
+			src.modules -= null
+			var/obj/item/stack/O = new T(src)
+			if(istype(O,/obj/item/stack/package_wrap))
+				O.max_amount = 24
+			src.modules += O
+			O.amount = 1
 
 /obj/item/weapon/robot_module/syndicate
 	name = "syndicate robot module"
@@ -384,7 +395,7 @@
 	src.modules += new /obj/item/weapon/card/emag(src)
 	src.modules += new /obj/item/weapon/crowbar(src)
 	sensor_augs = list("Security", "Medical", "Mesons", "Thermal", "Light Amplification", "Disable")
-	return
+	fix_modules()
 
 /obj/item/weapon/robot_module/combat
 	name = "combat robot module"
@@ -399,7 +410,7 @@
 	src.emag = new /obj/item/weapon/gun/energy/lasercannon/cyborg(src)
 	sensor_augs = list("Security", "Medical", "Mesons", "Thermal", "Light Amplification", "Disable")
 
-	return
+	fix_modules()
 
 /obj/item/weapon/robot_module/proc/add_languages(var/mob/living/silicon/robot/R)
 	for(var/language in languages)

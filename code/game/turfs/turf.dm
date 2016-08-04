@@ -1,6 +1,7 @@
 /turf
 	icon = 'icons/turf/floors.dmi'
 	level = 1.0
+	plane = TURF_PLANE
 
 	luminosity = 0
 
@@ -57,8 +58,6 @@
 
 	var/explosion_block = 0
 
-	var/dynamic_lighting = 1
-
 	//For shuttles - if 1, the turf's underlay will never be changed when moved
 	//See code/datums/shuttle.dm @ 544
 	var/preserve_underlay = 0
@@ -67,6 +66,8 @@
 
 	// This is the placed to store data for the holomap.
 	var/list/image/holomap_data
+
+
 
 /turf/examine(mob/user)
 	..()
@@ -85,10 +86,6 @@
 		spawn( 0 )
 			src.Entered(AM)
 			return
-
-	var/area/A = loc
-	if(!dynamic_lighting || !A.lighting_use_dynamic)
-		luminosity = 1
 
 /turf/proc/initialize()
 	return
@@ -348,10 +345,22 @@
 
 	var/datum/gas_mixture/env
 
+	if (!lighting_corners_initialised && global.lighting_corners_initialised)
+		if (!corners)
+			corners = list(null, null, null, null)
+
+		for (var/i = 1 to 4)
+			if (corners[i]) // Already have a corner on this direction.
+				continue
+
+			corners[i] = new/datum/lighting_corner(src, LIGHTING_CORNER_DIAGONAL[i])
+
 	var/old_opacity = opacity
 	var/old_dynamic_lighting = dynamic_lighting
-	var/list/old_affecting_lights = affecting_lights
+	var/old_affecting_lights = affecting_lights
 	var/old_lighting_overlay = lighting_overlay
+	var/old_corners = corners
+
 	var/old_holomap = holomap_data
 //	to_chat(world, "Replacing [src.type] with [N]")
 
@@ -414,15 +423,18 @@
 
 		. = W
 
+	lighting_corners_initialised = TRUE
+	recalc_atom_opacity()
 	lighting_overlay = old_lighting_overlay
 	affecting_lights = old_affecting_lights
+	corners = old_corners
 	if((old_opacity != opacity) || (dynamic_lighting != old_dynamic_lighting) || force_lighting_update)
 		reconsider_lights()
 	if(dynamic_lighting != old_dynamic_lighting)
 		if(dynamic_lighting)
-			lighting_build_overlays()
+			lighting_build_overlay()
 		else
-			lighting_clear_overlays()
+			lighting_clear_overlay()
 
 	holomap_data = old_holomap // Holomap persists through everything.
 
@@ -494,8 +506,15 @@
 				S.air.update_values()
 */
 
+/turf/proc/get_underlying_turf()
+	var/area/A = loc
+	if(A.base_turf_type)
+		return A.base_turf_type
+
+	return get_base_turf(z)
+
 /turf/proc/ReplaceWithLattice()
-	src.ChangeTurf(get_base_turf(src.z))
+	src.ChangeTurf(get_underlying_turf())
 	if(istype(src, /turf/space))
 		new /obj/structure/lattice(src)
 
@@ -614,7 +633,7 @@
 
 
 /turf/proc/cultify()
-	if(istype(src, get_base_turf(src.z))) //Don't cultify the base turf, ever
+	if(istype(src, get_underlying_turf())) //Don't cultify the base turf, ever
 		return
 	ChangeTurf(get_base_turf(src.z))
 
@@ -622,7 +641,7 @@
 	return PROJREACT_WALLS
 
 /turf/singularity_act()
-	if(istype(src, get_base_turf(src.z))) //Don't singulo the base turf, ever
+	if(istype(src, get_underlying_turf())) //Don't singulo the base turf, ever
 		return
 	if(intact)
 		for(var/obj/O in contents)
@@ -630,7 +649,7 @@
 				continue
 			if(O.invisibility == 101)
 				O.singularity_act()
-	ChangeTurf(get_base_turf(src.z))
+	ChangeTurf(get_underlying_turf())
 	return(2)
 
 //Return a lattice to allow catwalk building
@@ -647,9 +666,6 @@
 
 /turf/proc/dismantle_wall()
 	return
-
-/turf/change_area(oldarea, newarea)
-	lighting_build_overlays()
 
 /////////////////////////////////////////////////////
 
@@ -684,3 +700,8 @@
 /turf/proc/soft_add_holomap(var/atom/movable/AM)
 	if (!ticker || ticker.current_state != GAME_STATE_PLAYING)
 		add_holomap(AM)
+
+// Return -1 to make movement instant for the mob
+// Return high values to make movement slower
+/turf/proc/adjust_slowdown(mob/living/L, base_slowdown)
+	return base_slowdown

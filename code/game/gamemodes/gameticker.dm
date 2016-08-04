@@ -228,6 +228,8 @@ var/global/datum/controller/gameticker/ticker
 
 	stat_collection.round_start_time = world.realtime
 
+	wageSetup()
+
 	return 1
 
 /datum/controller/gameticker
@@ -246,7 +248,7 @@ var/global/datum/controller/gameticker/ticker
 	cinematic = new(src)
 	cinematic.icon = 'icons/effects/station_explosion.dmi'
 	cinematic.icon_state = "station_intact"
-	cinematic.layer = 20
+	cinematic.plane = HUD_PLANE
 	cinematic.mouse_opacity = 0
 	cinematic.screen_loc = "1,0"
 

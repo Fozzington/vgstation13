@@ -100,6 +100,9 @@
 	holomap = TRUE
 	auto_holomap = TRUE
 
+/obj/machinery/power/apc/no_alerts
+	make_alerts = FALSE
+
 // Frame only.
 /obj/machinery/power/apc/frame
 	icon_state = "apcmaint"
@@ -590,7 +593,7 @@
 		if (	((stat & BROKEN) || malfhack) \
 				&& !opened \
 				&& ( \
-					(W.force >= 5 && W.w_class >= 3.0) \
+					(W.force >= 5 && W.w_class >= W_CLASS_MEDIUM) \
 					|| istype(W,/obj/item/weapon/crowbar) \
 				) \
 				&& prob(20) )
@@ -965,6 +968,8 @@
 	if (seclevel2num(get_security_level()) == SEC_LEVEL_DELTA)
 		for(var/obj/item/weapon/pinpointer/point in world)
 			point.the_disk = src //the pinpointer will detect the shunted AI
+
+	stat_collection.malf.did_shunt = 1
 
 
 /obj/machinery/power/apc/proc/malfvacate(var/forced)

@@ -18,7 +18,7 @@
 	icon_state = "table"
 	density = 1
 	anchored = 1.0
-	layer = 2.8
+	layer = TABLE_LAYER
 	throwpass = 1	//You can throw objects over this, despite it's density.")
 	var/parts = /obj/item/weapon/table_parts
 	var/icon/clicked
@@ -351,7 +351,7 @@
 			if(get_dir(loc, target) == dir)
 				return !density
 		else if(mover.dir == dir) //Or are we using move code
-			if(density)	Bumped(mover)
+			if(density)	mover.Bump(src)
 			return !density
 	return 1
 
@@ -377,7 +377,7 @@
 				if(user.a_intent == I_HURT)
 					G.affecting.forceMove(loc)
 					if (prob(15))	M.Weaken(5)
-					M.apply_damage(8,def_zone = "head")
+					M.apply_damage(8,def_zone = LIMB_HEAD)
 					visible_message("<span class='warning'>[G.assailant] slams [G.affecting]'s face against \the [src]!</span>")
 					playsound(get_turf(src), 'sound/weapons/tablehit1.ogg', 50, 1)
 				else
@@ -493,7 +493,7 @@
 
 	dir = direction
 	if(dir != NORTH)
-		layer = 5
+		plane = ABOVE_HUMAN_PLANE
 	flipped = 1
 	flags |= ON_BORDER
 	for(var/D in list(turn(direction, 90), turn(direction, -90)))
@@ -509,7 +509,7 @@
 	verbs -=/obj/structure/table/proc/do_put
 	verbs +=/obj/structure/table/verb/do_flip
 
-	layer = initial(layer)
+	reset_plane_and_layer()
 	flipped = 0
 	flags &= ~ON_BORDER
 	for(var/D in list(turn(dir, 90), turn(dir, -90)))
@@ -624,7 +624,7 @@
 			if (G.state < GRAB_AGGRESSIVE)
 				if(user.a_intent == I_HURT)
 					if (prob(15))	M.Weaken(5)
-					M.apply_damage(15,def_zone = "head")
+					M.apply_damage(15,def_zone = LIMB_HEAD)
 					visible_message("<span class='warning'>[G.assailant] slams [G.affecting]'s face against \the [src]!</span>")
 					playsound(get_turf(src), 'sound/weapons/tablehit1.ogg', 50, 1)
 					playsound(get_turf(src), "shatter", 50, 1) //WRESTLEMANIA tax
@@ -670,6 +670,7 @@
 	throwpass = 1	//You can throw objects over this, despite it's density.
 	var/parts = /obj/item/weapon/rack_parts
 	var/offset_step = 0
+	var/health = 20
 
 /obj/structure/rack/bullet_act(var/obj/item/projectile/Proj)
 	if(Proj.destroy)
@@ -689,6 +690,16 @@
 			if(prob(25))
 				qdel(src)
 				new /obj/item/weapon/rack_parts(src.loc)
+
+/obj/structure/rack/proc/checkhealth()
+	if(health <= 0)
+		new /obj/item/weapon/rack_parts(loc)
+		qdel(src)
+
+/obj/structure/rack/kick_act()
+	health -= 5
+	checkhealth()
+	..()
 
 /obj/structure/rack/blob_act()
 	if(prob(75))

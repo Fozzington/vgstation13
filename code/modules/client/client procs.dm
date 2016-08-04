@@ -70,7 +70,7 @@
 	//Logs all hrefs
 	if(config && config.log_hrefs && investigations[I_HREFS])
 		var/datum/log_controller/I = investigations[I_HREFS]
-		I.write("<small>[time2text(world.timeofday,"hh:mm")] [src] (usr:[usr])</small> || [hsrc ? "[hsrc] " : ""][href]<br />")
+		I.write("<small>[time2text(world.timeofday,"hh:mm:ss")] [src] (usr:[usr])</small> || [hsrc ? "[hsrc] " : ""][href]<br />")
 
 	switch(href_list["_src_"])
 		if("holder")	hsrc = holder
@@ -136,8 +136,10 @@
 		admins += src
 		holder.owner = src
 
-	if(connection != "seeker")					//Invalid connection type.
-		return null
+	if(connection != "seeker")			//Invalid connection type.
+		if(connection == "web")
+			if(!holder) return null
+		else return null
 
 	if(byond_version < MIN_CLIENT_VERSION)		//Out of date client.
 		message_admins("[key]/[ckey] has connected with an out of date client! Their version: [byond_version]. They will be kicked shortly.")
@@ -145,7 +147,7 @@
 		spawn(5 SECONDS)
 			del(src)
 
-	if(IsGuestKey(key))
+	if(!guests_allowed && IsGuestKey(key))
 		alert(src,"This server doesn't allow guest accounts to play. Please go to http://www.byond.com/ and register for a key.","Guest","OK")
 		del(src)
 		return
@@ -281,6 +283,9 @@
 
 	if(!isnum(age))
 		age = Query6(sql_ckey, age)
+	if(!isnum(player_age)) //If they've never logged in before
+		player_age = 0
+
 	if(age < 14)
 		message_admins("[ckey(key)]/([src]) is a relatively new player, may consider watching them. AGE = [age]  First seen = [player_age]")
 		log_admin(("[ckey(key)]/([src]) is a relatively new player, may consider watching them. AGE = [age] First seen = [player_age]"))
@@ -362,6 +367,7 @@
 
 	to_chat(usr, "<span class='notice'>Re-sending NanoUI resources.  This may result in lag.</span>")
 	nanomanager.send_resources(src)
+	send_html_resources()
 
 //send resources to the client. It's here in its own proc so we can move it around easiliy if need be
 /client/proc/send_resources()

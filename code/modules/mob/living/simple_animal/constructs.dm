@@ -338,11 +338,15 @@
 ////////////////Glow//////////////////
 /mob/living/simple_animal/construct/proc/updateicon()
 	overlays = 0
-	var/overlay_layer = LIGHTING_LAYER + 1
-	if(layer != MOB_LAYER)
-		overlay_layer=TURF_LAYER+0.2
+	var/overlay_layer = ABOVE_LIGHTING_LAYER
+	var/overlay_plane = LIGHTING_PLANE
+	if(layer != MOB_LAYER) // ie it's hiding
+		overlay_layer = FLOAT_LAYER
+		overlay_plane = FLOAT_PLANE
 
-	overlays += image(icon,"glow-[icon_state]",overlay_layer)
+	var/image/glow = image(icon,"glow-[icon_state]",overlay_layer)
+	glow.plane = overlay_plane
+	overlays += glow
 
 ////////////////Powers//////////////////
 
@@ -384,9 +388,7 @@
 		if(fire)
 			if(fire_alert)							fire.icon_state = "fire1"
 			else									fire.icon_state = "fire0"
-		if(pullin)
-			if(pulling)								pullin.icon_state = "pull1"
-			else									pullin.icon_state = "pull0"
+		update_pull_icon()
 
 		if(purged)
 			if(purge > 0)							purged.icon_state = "purge1"

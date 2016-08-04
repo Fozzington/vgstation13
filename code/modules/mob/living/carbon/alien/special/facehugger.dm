@@ -14,7 +14,7 @@ var/const/MAX_ACTIVE_TIME = 400
 	icon = 'icons/mob/alien.dmi'
 	icon_state = "facehugger"
 	item_state = "facehugger"
-	w_class = 1 //note: can be picked up by aliens unlike most other items of w_class below 4
+	w_class = W_CLASS_TINY //note: can be picked up by aliens unlike most other items of w_class below 4
 	flags = FPRINT  | MASKINTERNALS | PROXMOVE
 	throw_range = 5
 	health = 5
@@ -295,7 +295,7 @@ var/const/MAX_ACTIVE_TIME = 400
 		target.status_flags |= XENO_HOST
 		if(istype(target, /mob/living/carbon/human))
 			var/mob/living/carbon/human/T = target
-			var/datum/organ/external/chest/affected = T.get_organ("chest")
+			var/datum/organ/external/chest/affected = T.get_organ(LIMB_CHEST)
 			affected.implants += E
 		target.visible_message("<span class='danger'>\The [src] falls limp after violating [target]'s face !</span>")
 		stat_collection.xeno.faces_hugged++

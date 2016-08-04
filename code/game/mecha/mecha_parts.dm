@@ -6,7 +6,7 @@
 	name = "mecha part"
 	icon = 'icons/mecha/mech_construct.dmi'
 	icon_state = "blank"
-	w_class = 20
+	w_class = W_CLASS_GIANT
 	flags = FPRINT
 	siemens_coefficient = 1
 	origin_tech = "programming=2;materials=2"
@@ -330,11 +330,11 @@
 	icon = 'icons/obj/module.dmi'
 	icon_state = "std_mod"
 	item_state = "circuitboard"
-	board_type = "other"
+	board_type = OTHER
 	flags = FPRINT
 	siemens_coefficient = 1
 	force = 5.0
-	w_class = 2.0
+	w_class = W_CLASS_SMALL
 	throwforce = 5.0
 	throw_speed = 3
 	throw_range = 15

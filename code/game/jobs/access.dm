@@ -10,7 +10,7 @@
 /var/const/access_tox_storage = 8	// Toxins mixing and storage
 /var/const/access_genetics = 9
 /var/const/access_engine = 10		// Power Engines
-/var/const/access_engine_equip= 11	// Engineering Foyer
+/var/const/access_engine_equip = 11	// Engineering Foyer
 /var/const/access_maint_tunnels = 12
 /var/const/access_external_airlocks = 13
 /var/const/access_emergency_storage = 14
@@ -84,6 +84,9 @@
 	//The Syndicate
 /var/const/access_syndicate = 150//General Syndicate Access
 
+	//Vox are Pox
+/var/const/access_trade = 140//Vox Trader Access
+
 	//MONEY
 /var/const/access_crate_cash = 200
 
@@ -110,6 +113,9 @@
 	return list()
 
 /obj/item/proc/GetID()
+	return null
+
+/obj/item/proc/get_owner_name_from_ID()
 	return null
 
 /obj/proc/set_up_access()

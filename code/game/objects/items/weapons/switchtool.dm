@@ -6,7 +6,7 @@
 	flags = FPRINT
 	siemens_coefficient = 1
 	force = 3
-	w_class = 2.0
+	w_class = W_CLASS_SMALL
 	throwforce = 6.0
 	throw_speed = 3
 	throw_range = 6
@@ -102,6 +102,7 @@
 					return 1
 
 /obj/item/weapon/switchtool/proc/remove_module(mob/user)
+	deployed.cant_drop = 0
 	deployed.loc = get_turf(user)
 	for(var/module in stored_modules)
 		if(stored_modules[module] == deployed)
@@ -114,6 +115,7 @@
 
 /obj/item/weapon/switchtool/proc/undeploy()
 	playsound(get_turf(src), "sound/weapons/switchblade.ogg", 10, 1)
+	deployed.cant_drop = 0
 	deployed = null
 	overlays.len = 0
 	w_class = initial(w_class)
@@ -127,6 +129,7 @@
 
 	playsound(get_turf(src), "sound/weapons/switchblade.ogg", 10, 1)
 	deployed = stored_modules[module]
+	deployed.cant_drop = 1
 	overlays += get_module_name(module)
 	w_class = max(w_class, deployed.w_class)
 

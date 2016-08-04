@@ -17,6 +17,7 @@ var/list/impact_master = list()
 	icon_state = "bullet"
 	density = 1
 	unacidable = 1
+	plane = EFFECTS_PLANE
 	anchored = 1 //There's a reason this is here, Mport. God fucking damn it -Agouri. Find&Fix by Pete. The reason this is here is to stop the curving of emitter shots.
 	flags = FPRINT
 	pass_flags = PASSTABLE
@@ -93,6 +94,9 @@ var/list/impact_master = list()
 	var/PixelX = 0
 	var/PixelY = 0
 
+	var/initial_pixel_x = 0
+	var/initial_pixel_y = 0
+
 	animate_movement = 0
 	var/linear_movement = 1
 
@@ -101,6 +105,20 @@ var/list/impact_master = list()
 	var/penetration_message = 1 //Message that is shown when a projectile penetrates an object
 	var/fire_sound = 'sound/weapons/Gunshot.ogg' //sound that plays when the projectile is fired
 	var/rotate = 1 //whether the projectile is rotated based on angle or not
+	var/superspeed = 0 //When set to 1, the projectile will travel at twice the normal speed
+	var/super_speed = 0 //This exists just for proper functionality
+
+/obj/item/projectile/New()
+	..()
+	initial_pixel_x = pixel_x
+	initial_pixel_y = pixel_y
+	if(superspeed)
+		super_speed = 1
+
+/obj/item/projectile/New()
+	..()
+	if(superspeed)
+		super_speed = 1
 
 /obj/item/projectile/proc/on_hit(var/atom/atarget, var/blocked = 0)
 	if(blocked >= 2)		return 0//Full block
@@ -405,6 +423,20 @@ var/list/impact_master = list()
 
 
 /obj/item/projectile/proc/bresenham_step(var/distA, var/distB, var/dA, var/dB)
+	if(!superspeed)
+		return make_bresenham_step(distA, distB, dA, dB)
+	else
+		if(make_bresenham_step(distA, distB, dA, dB))
+			if(super_speed)
+				super_speed = 0
+				return 1
+			else
+				super_speed = 1
+				return 0
+		else
+			return 0
+
+/obj/item/projectile/proc/make_bresenham_step(var/distA, var/distB, var/dA, var/dB)
 	if(step_delay)
 		sleep(step_delay)
 	if(kill_count < 1)
@@ -438,7 +470,10 @@ var/list/impact_master = list()
 		var/AY = (override_starting_Y - src.y)*32
 		var/BX = (override_target_X - src.x)*32
 		var/BY = (override_target_Y - src.y)*32
-		var/XX = (((BX-AX)*(-BX))+((BY-AY)*(-BY)))/(((BX-AX)*(BX-AX))+((BY-AY)*(BY-AY)))
+		var/XXcheck = ((BX-AX)*(BX-AX))+((BY-AY)*(BY-AY))
+		if(!XXcheck)
+			return
+		var/XX = (((BX-AX)*(-BX))+((BY-AY)*(-BY)))/XXcheck
 
 		PixelX = round(BX+((BX-AX)*XX))
 		PixelY = round(BY+((BY-AY)*XX))
@@ -451,6 +486,9 @@ var/list/impact_master = list()
 				PixelX -= 16
 			if(WEST)
 				PixelX += 16
+
+		PixelX += initial_pixel_x
+		PixelY += initial_pixel_y
 	return
 
 /obj/item/projectile/proc/bullet_die()
@@ -628,3 +666,38 @@ var/list/impact_master = list()
 
 /obj/item/projectile/kick_act() //Can't be kicked around
 	return
+
+/obj/item/projectile/attack_hand(mob/user)
+	if(timestopped)
+		..()
+
+/obj/item/projectile/friendlyCheck
+	invisibility = 101
+	rotate = 0
+	damage = 0
+	nodamage = 1
+	var/atom/impact = null
+
+/obj/item/projectile/friendlyCheck/process()
+	OnFired()
+	while(!impact && loc && (kill_count > 0))
+		if(dist_x > dist_y)
+			bresenham_step(dist_x,dist_y,dx,dy)
+		else
+			bresenham_step(dist_y,dist_x,dy,dx)
+	return impact
+
+/obj/item/projectile/proc/get_hit_atom(var/atom/A)
+	if(istype(A, /obj/structure/bed/chair/vehicle))
+		var/obj/structure/bed/chair/vehicle/JC = A
+		if(JC.occupant)
+			return JC.occupant
+	return A
+
+/obj/item/projectile/friendlyCheck/Bump(var/atom/A)
+	if(bumped)
+		return 0
+	bumped = 1
+
+	if(ismob(A) || isturf(A) || isobj(A))
+		impact = get_hit_atom(A)

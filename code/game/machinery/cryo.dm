@@ -11,7 +11,8 @@ var/global/list/cryo_health_indicator = list(	"full" = image("icon" = 'icons/obj
 	icon_state = "cell-off"
 	density = 1
 	anchored = 1.0
-	layer = 2.8
+	layer = ABOVE_WINDOW_LAYER
+	plane = OBJ_PLANE
 
 	var/on = 0
 	var/ejecting = 0
@@ -327,6 +328,7 @@ var/global/list/cryo_health_indicator = list(	"full" = image("icon" = 'icons/obj
 		if(user.drop_item(G, src))
 			beaker =  G
 			user.visible_message("[user] adds \a [G] to \the [src]!", "You add \a [G] to \the [src]!")
+			investigation_log(I_CHEMS, "was loaded with \a [G] by [key_name(user)], containing [G.reagents.get_reagent_ids(1)]")
 	if(iswrench(G))//FUCK YOU PARENT, YOU AREN'T MY REAL DAD
 		return
 	if(..())
@@ -406,8 +408,8 @@ var/global/list/cryo_health_indicator = list(	"full" = image("icon" = 'icons/obj
 				var/heal_brute = occupant.getBruteLoss() ? min(1, 20/occupant.getBruteLoss()) : 0
 				var/heal_fire = occupant.getFireLoss() ? min(1, 20/occupant.getFireLoss()) : 0
 				occupant.heal_organ_damage(heal_brute,heal_fire)
-		var/has_cryo = occupant.reagents.get_reagent_amount("cryoxadone") >= 1
-		var/has_clonexa = occupant.reagents.get_reagent_amount("clonexadone") >= 1
+		var/has_cryo = occupant.reagents.get_reagent_amount(CRYOXADONE) >= 1
+		var/has_clonexa = occupant.reagents.get_reagent_amount(CLONEXADONE) >= 1
 		var/has_cryo_medicine = has_cryo || has_clonexa
 		if(beaker && !has_cryo_medicine)
 			beaker.reagents.trans_to(occupant, 1, 1)

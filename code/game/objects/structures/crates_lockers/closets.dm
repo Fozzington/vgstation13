@@ -202,6 +202,13 @@
 					A.ex_act(severity++)
 				qdel(src)
 
+/obj/structure/closet/shuttle_act()
+	for(var/atom/movable/AM in contents)
+		AM.forceMove(src.loc)
+		AM.shuttle_act()
+
+	..()
+
 /obj/structure/closet/bullet_act(var/obj/item/projectile/Proj)
 	health -= Proj.damage
 	..()
@@ -278,8 +285,7 @@
 			if(!WT.remove_fuel(0,user))
 				to_chat(user, "<span class='notice'>You need more welding fuel to complete this task.</span>")
 				return
-			var/obj/item/stack/sheet/metal/Met = getFromPool(/obj/item/stack/sheet/metal, get_turf(src))
-			Met.amount = 2
+			materials.makeSheets(src)
 			for(var/mob/M in viewers(src))
 				M.show_message("<span class='notice'>\The [src] has been cut apart by [user] with \the [WT].</span>", 1, "You hear welding.", 2)
 			qdel(src)
@@ -412,7 +418,7 @@
 	if(!opened)
 		icon_state = icon_closed
 		if(welded)
-			overlays += "welded"
+			overlays += image(icon = icon, icon_state = "welded")
 	else
 		icon_state = icon_opened
 

@@ -5,7 +5,7 @@
 	if(istype(target,/obj/item/weapon/nullrod))
 		var/turf/T = get_turf(target)
 		nullblock = 1
-		T.turf_animation('icons/effects/96x96.dmi',"nullding",-32,-32,MOB_LAYER+1,'sound/piano/Ab7.ogg')
+		T.turf_animation('icons/effects/96x96.dmi',"nullding",-32,-32,MOB_LAYER+1,'sound/piano/Ab7.ogg',anim_plane = EFFECTS_PLANE)
 		return 1
 	else if(target.contents)
 		for(var/atom/A in target.contents)
@@ -18,7 +18,7 @@
 	c_animation.density = 0
 	c_animation.anchored = 1
 	c_animation.icon = 'icons/effects/effects.dmi'
-	c_animation.layer = 5
+	c_animation.plane = EFFECTS_LAYER
 	c_animation.master = src.loc
 	c_animation.icon_state = "[animation_icon]"
 	flick("cultification",c_animation)
@@ -195,7 +195,7 @@
 			to_chat(M, "<span class='sinister'>Your blood pulses. Your head throbs. The world goes red. All at once you are aware of a horrible, horrible truth. The veil of reality has been ripped away and in the festering wound left behind something sinister takes root.</span>")
 			to_chat(M, "<span class='sinister'>Assist your new compatriots in their dark dealings. Their goal is yours, and yours is theirs. You serve the Dark One above all else. Bring It back.</span>")
 			to_chat(M, "<span class='sinister'>You can now speak and understand the forgotten tongue of the occult.</span>")
-			M.add_language("Cult")
+			M.add_language(LANGUAGE_CULT)
 			log_admin("[usr]([ckey(usr.key)]) has converted [M] ([ckey(M.key)]) to the cult at <A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[M.loc.x];Y=[M.loc.y];Z=[M.loc.z]'>([M.loc.x], [M.loc.y], [M.loc.z])</a>")
 			stat_collection.cult.converted++
 			if(M.client)
@@ -394,9 +394,7 @@
 	spawn()
 		for(var/i = 0;i < 2;i++)
 			for(var/turf/T in drain_turflist)
-				var/obj/effect/tracker/drain/Tr = getFromPool(/obj/effect/tracker/drain, T)
-				Tr.target = user
-				Tr.icon_state = pick("soul1","soul2","soul3")
+				make_tracker_effects(T, user, 1, "soul", 3, /obj/effect/tracker/drain)
 				sleep(1)
 
 	if(user.bhunger)
@@ -615,7 +613,7 @@
 	"<span class='warning'>You hear liquid flowing.</span>")
 
 	animation = new(D.loc)
-	animation.layer = usr.layer + 1
+	animation.plane = EFFECTS_PLANE
 	animation.icon_state = "blank"
 	animation.icon = 'icons/mob/mob.dmi'
 	animation.master = this_rune
@@ -650,7 +648,7 @@
 	to_chat(D, "<span class='sinister'>Assist your new compatriots in their dark dealings. Their goal is yours, and yours is theirs. You serve the Dark One above all else. Bring It back.</span>")
 	to_chat(D, "<span class='sinister'>You can now speak and understand the forgotten tongue of the occult.</span>")
 
-	D.add_language("Cult")
+	D.add_language(LANGUAGE_CULT)
 
 
 	var/mob/living/user = usr
@@ -1069,12 +1067,9 @@
 			return
 		cultist.unlock_from()
 		if (cultist.handcuffed)
-			cultist.handcuffed.loc = cultist.loc
-			cultist.handcuffed.handcuffs_remove(cultist)
+			cultist.drop_from_inventory(cultist.handcuffed)
 		if (cultist.legcuffed)
-			cultist.legcuffed.loc = cultist.loc
-			cultist.legcuffed = null
-			cultist.update_inv_legcuffed()
+			cultist.drop_from_inventory(cultist.legcuffed)
 		if (istype(cultist.wear_mask, /obj/item/clothing/mask/muzzle))
 			cultist.u_equip(cultist.wear_mask, 1)
 		if(istype(cultist.loc, /obj/structure/closet))
@@ -1322,13 +1317,9 @@
 			var/mob/living/carbon/monkey/K = user
 			K.visible_message("<span class='warning'> The rune disappears with a flash of red light, [K] now looks like the cutest of all followers of Nar-Sie...</span>", \
 			"<span class='warning'>You are blinded by the flash of red light! After you're able to see again, you see that you are now wearing a set of armor. Might not offer much protection due to its size though.</span>")
-			if(!istype(K.uniform, /obj/item/clothing/monkeyclothes/cultrobes))
-				var/obj/item/clothing/monkeyclothes/cultrobes/CR = new /obj/item/clothing/monkeyclothes/cultrobes(user.loc)
-				K.wearclothes(CR)
-			if(!istype(K.hat, /obj/item/clothing/head/culthood/alt))
-				var/obj/item/clothing/head/culthood/alt/CH = new /obj/item/clothing/head/culthood/alt(user.loc)
-				K.wearhat(CH)
-			K.equip_to_slot_or_del(new /obj/item/weapon/storage/backpack/cultpack(K), slot_back)
+			K.equip_to_slot_or_drop(new /obj/item/clothing/monkeyclothes/cultrobes, slot_w_uniform)
+			K.equip_to_slot_or_drop(new /obj/item/clothing/head/culthood/alt, slot_head)
+			K.equip_to_slot_or_drop(new /obj/item/weapon/storage/backpack/cultpack, slot_back)
 			K.put_in_hands(new /obj/item/weapon/melee/cultblade(K))
 		return
 	else
@@ -1352,11 +1343,9 @@
 					var/mob/living/carbon/monkey/K = M
 					K.visible_message("<span class='warning'> The rune disappears with a flash of red light, [K] now looks like the cutest of all followers of Nar-Sie...</span>", \
 					"<span class='warning'>You are blinded by the flash of red light! After you're able to see again, you see that you are now wearing a set of armor. Might not offer much protection due to its size though.</span>")
-					var/obj/item/clothing/monkeyclothes/cultrobes/CR = new /obj/item/clothing/monkeyclothes/cultrobes(loc)
-					K.wearclothes(CR)
-					var/obj/item/clothing/head/culthood/alt/CH = new /obj/item/clothing/head/culthood/alt(loc)
-					K.wearhat(CH)
-					K.equip_to_slot_or_del(new /obj/item/weapon/storage/backpack/cultpack(K), slot_back)
+					K.equip_to_slot_or_drop(new /obj/item/clothing/monkeyclothes/cultrobes, slot_w_uniform)
+					K.equip_to_slot_or_drop(new /obj/item/clothing/head/culthood/alt, slot_head)
+					K.equip_to_slot_or_drop(new /obj/item/weapon/storage/backpack/cultpack, slot_back)
 					K.put_in_hands(new /obj/item/weapon/melee/cultblade(K))
 				else if(isconstruct(M))
 					var/construct_class

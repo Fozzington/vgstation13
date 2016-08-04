@@ -108,7 +108,6 @@
 		user.forceMove(stationgate.loc)
 	else
 		to_chat(user, "[src] has no destination.")
-
 // -------------------------------------------
 // This was supposed to be used by adminghosts
 // I think it is a *terrible* idea

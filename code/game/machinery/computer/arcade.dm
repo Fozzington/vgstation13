@@ -44,6 +44,7 @@
 							/obj/item/toy/prize/odysseus					= 1,
 							/obj/item/toy/prize/phazon						= 1,
 							/obj/item/weapon/boomerang/toy					= 1,
+							/obj/item/toy/foamblade							= 1,
 							)
 
 /obj/machinery/computer/arcade
@@ -201,14 +202,14 @@
 
 			if(emagged)
 				feedback_inc("arcade_win_emagged")
-				new /obj/effect/spawner/newbomb/timer/syndicate(src.loc)
 				new /obj/item/clothing/head/collectable/petehat(src.loc)
-				new /obj/item/device/maracas(src.loc)
-				new /obj/item/device/maracas(src.loc)
-				message_admins("[key_name_admin(usr)] has outbombed Cuban Pete and been awarded a bomb.")
-				log_game("[key_name_admin(usr)] has outbombed Cuban Pete and been awarded a bomb.")
+				new /obj/item/device/maracas/cubanpete(src.loc)
+				new /obj/item/device/maracas/cubanpete(src.loc)
+				message_admins("[key_name_admin(usr)] has outbombed Cuban Pete and been awarded explosive maracas.")
+				log_game("[key_name_admin(usr)] has outbombed Cuban Pete and been awarded explosive maracas.")
 				src.New()
 				emagged = 0
+
 			else if(!contents.len)
 				feedback_inc("arcade_win_normal")
 				var/prizeselect = pickweight(prizes)
@@ -220,10 +221,10 @@
 				else if(istype(prizeselect, /obj/item/clothing/suit/syndicatefake)) //Helmet is part of the suit
 					new	/obj/item/clothing/head/syndicatefake(src.loc)
 
-			else
+			else //admins can varedit arcades to have special prizes via contents, but it removes the prize rather than spawn a new one
 				feedback_inc("arcade_win_normal")
 				var/atom/movable/prize = pick(contents)
-				prize.loc = src.loc
+				prize.forceMove(src.loc)
 
 	else if (emagged && (turtle >= 4))
 		var/boomamt = rand(5,10)

@@ -14,7 +14,6 @@
 	icon = 'icons/obj/turrets.dmi'
 	icon_state = "grey_target_prism"
 	anchored = 1
-	layer = 3
 	invisibility = INVISIBILITY_LEVEL_TWO		// the turret is invisible if it's inside its cover
 	density = 1
 	use_power = 1			// this turret uses and requires power
@@ -81,8 +80,8 @@
 				// All energy-based weapons are applicable
 		switch(E.type)
 			if(/obj/item/weapon/gun/energy/laser/bluetag)
-				projectile = /obj/item/projectile/beam/lastertag/blue
-				eprojectile = /obj/item/projectile/beam/lastertag/omni//This bolt will stun ERRYONE with a vest
+				projectile = /obj/item/projectile/beam/lasertag/blue
+				eprojectile = /obj/item/projectile/beam/lasertag/omni//This bolt will stun ERRYONE with a vest
 				iconholder = null
 				reqpower = 100
 				lasercolor = "b"
@@ -95,8 +94,8 @@
 				shot_delay = 30
 
 			if(/obj/item/weapon/gun/energy/laser/redtag)
-				projectile = /obj/item/projectile/beam/lastertag/red
-				eprojectile = /obj/item/projectile/beam/lastertag/omni
+				projectile = /obj/item/projectile/beam/lasertag/red
+				eprojectile = /obj/item/projectile/beam/lasertag/omni
 				iconholder = null
 				reqpower = 100
 				lasercolor = "r"
@@ -436,14 +435,14 @@ Status: []<BR>"},
 	if (src.health <= 0)
 		src.die() // the death process :(
 	if((src.lasercolor == "b") && (src.disabled == 0))
-		if(istype(Proj, /obj/item/projectile/beam/lastertag/red))
+		if(istype(Proj, /obj/item/projectile/beam/lasertag/red))
 			src.disabled = 1
 			qdel (Proj)
 			Proj = null
 			sleep(100)
 			src.disabled = 0
 	if((src.lasercolor == "r") && (src.disabled == 0))
-		if(istype(Proj, /obj/item/projectile/beam/lastertag/blue))
+		if(istype(Proj, /obj/item/projectile/beam/lasertag/blue))
 			src.disabled = 1
 			qdel (Proj)
 			Proj = null
@@ -611,14 +610,14 @@ Status: []<BR>"},
 	raising=0
 	cover.icon_state="openTurretCover"
 	raised=1
-	layer=4
+	layer = TURRET_LAYER
 
 /obj/machinery/porta_turret/proc/popDown() // pops the turret down
 	if(disabled)
 		return
 	if(raising || !raised) return
 	if(stat & BROKEN) return
-	layer=3
+	layer = OBJ_LAYER
 	raising=1
 	flick("popdown",cover)
 	playsound(get_turf(src), 'sound/effects/turret/open.wav', 60, 1)
@@ -646,10 +645,13 @@ Status: []<BR>"},
 			if((src.allowed(perp)) && !(src.lasercolor)) // if the perp has security access, return 0
 				return 0
 
-			if((istype(perp.l_hand, /obj/item/weapon/gun) && !istype(perp.l_hand, /obj/item/weapon/gun/projectile/shotgun)) || istype(perp.l_hand, /obj/item/weapon/melee/baton))
-				threatcount += 4
+			for(var/obj/item/G in perp.held_items)
+				if(istype(G, /obj/item/weapon/gun))
+					if(istype(G, /obj/item/weapon/gun/projectile/shotgun)) continue
+				else if(!istype(G, /obj/item/weapon/melee/baton))
+					continue
+				//Scan for guns and stun batons. Bartender's shotgun doesn't trigger the turret
 
-			if((istype(perp.r_hand, /obj/item/weapon/gun) && !istype(perp.r_hand, /obj/item/weapon/gun/projectile/shotgun)) || istype(perp.r_hand, /obj/item/weapon/melee/baton))
 				threatcount += 4
 
 			if(istype(perp.belt, /obj/item/weapon/gun) || istype(perp.belt, /obj/item/weapon/melee/baton))
@@ -659,7 +661,7 @@ Status: []<BR>"},
 		threatcount = 0//But does not target anyone else
 		if(istype(perp.wear_suit, /obj/item/clothing/suit/redtag))
 			threatcount += 4
-		if((istype(perp.r_hand,/obj/item/weapon/gun/energy/laser/redtag)) || (istype(perp.l_hand,/obj/item/weapon/gun/energy/laser/redtag)))
+		if(perp.find_held_item_by_type(/obj/item/weapon/gun/energy/laser/redtag))
 			threatcount += 4
 		if(istype(perp.belt, /obj/item/weapon/gun/energy/laser/redtag))
 			threatcount += 2
@@ -668,7 +670,7 @@ Status: []<BR>"},
 		threatcount = 0
 		if(istype(perp.wear_suit, /obj/item/clothing/suit/bluetag))
 			threatcount += 4
-		if((istype(perp.r_hand,/obj/item/weapon/gun/energy/laser/bluetag)) || (istype(perp.l_hand,/obj/item/weapon/gun/energy/laser/bluetag)))
+		if(perp.find_held_item_by_type(/obj/item/weapon/gun/energy/laser/bluetag))
 			threatcount += 4
 		if(istype(perp.belt, /obj/item/weapon/gun/energy/laser/bluetag))
 			threatcount += 2
@@ -968,7 +970,7 @@ Status: []<BR>"},
 	icon = 'icons/obj/turrets.dmi'
 	icon_state = "turretCover"
 	anchored = 1
-	layer = 3.5
+	layer = TURRET_COVER_LAYER
 	density = 0
 	var/obj/machinery/porta_turret/Parent_Turret = null
 

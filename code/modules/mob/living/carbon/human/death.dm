@@ -13,8 +13,12 @@
 			//Override the current limb status and don't cause an explosion
 			E.droplimb(1, 1)
 
+	var/gib_radius = 0
+	if(reagents.has_reagent(LUBE))
+		gib_radius = 6 //Your insides are all lubed, so gibs travel much further
+
 	anim(target = src, a_icon = 'icons/mob/mob.dmi', flick_anim = "gibbed-h", sleeptime = 15)
-	hgibs(loc, viruses, dna, species.flesh_color, species.blood_color)
+	hgibs(loc, viruses, dna, species.flesh_color, species.blood_color, gib_radius)
 	qdel(src)
 
 /mob/living/carbon/human/dust()
@@ -31,7 +35,7 @@
 	else
 		anim(target = src, a_icon = 'icons/mob/mob.dmi', flick_anim = "dust-h", sleeptime = 15)
 
-	var/datum/organ/external/head_organ = get_organ("head")
+	var/datum/organ/external/head_organ = get_organ(LIMB_HEAD)
 	if(head_organ.status & ORGAN_DESTROYED)
 		new /obj/effect/decal/remains/human/noskull(loc)
 	else
@@ -130,7 +134,7 @@
 	status_flags |= DISFIGURED	//Makes them unknown without fucking up other stuff like admintools
 	update_body(0)
 	update_mutantrace()
-	vessel.remove_reagent("blood",vessel.get_reagent_amount("blood"))
+	vessel.remove_reagent(BLOOD,vessel.get_reagent_amount(BLOOD))
 	return
 
 /mob/living/carbon/human/proc/Drain()

@@ -15,7 +15,7 @@
 	name = "card"
 	desc = "Does card things."
 	icon = 'icons/obj/card.dmi'
-	w_class = 1.0
+	w_class = W_CLASS_TINY
 	var/associated_account_number = 0
 
 	var/list/files = list(  )
@@ -45,7 +45,6 @@
 	name = "Coordinates to Clown Planet"
 	icon_state = "data"
 	item_state = "card-id"
-	layer = 3
 	level = 2
 	desc = "This card contains coordinates to the fabled Clown Planet. Handle with care."
 	function = "teleporter"
@@ -218,6 +217,9 @@
 /obj/item/weapon/card/id/GetID()
 	return src
 
+/obj/item/weapon/card/id/get_owner_name_from_ID()
+	return registered_name
+
 /obj/item/weapon/card/id/proc/update_virtual_wallet(var/new_funds=0)
 	if(!istype(virtual_wallet))
 		virtual_wallet = new()
@@ -366,6 +368,7 @@
 							"CE",
 							"clown",
 							"mime",
+							"trader",
 							"syndie",
 							"deathsquad",
 							"creed",
@@ -597,3 +600,4 @@
 	registered_name = "traveler"
 	assignment = "visitor"
 	icon_state = "trader"
+	access = list(access_trade)

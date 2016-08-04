@@ -32,7 +32,7 @@
 		var/light_amount = 0 //How much light there is in the place, affects receiving nutrition and healing
 		if(isturf(loc)) //Else, there's considered to be no light
 			var/turf/T = loc
-			light_amount = T.get_lumcount(0.5) * 10
+			light_amount = T.get_lumcount() * 10
 
 		nutrition += light_amount
 		traumatic_shock -= light_amount
@@ -101,8 +101,8 @@
 			take_overall_damage(2,0)
 			traumatic_shock++
 
-	if(drowsyness)
-		drowsyness--
+	if(drowsyness > 0)
+		drowsyness = max(0, drowsyness - 1)
 		eye_blurry = max(2, eye_blurry)
 		if(prob(5))
 			sleeping += 1

@@ -4,7 +4,6 @@
 	icon = 'icons/obj/aibots.dmi'
 	icon_state = "secbot0"
 	icon_initial = "secbot"
-	layer = 5.0
 	density = 0
 	anchored = 0
 	health = 25
@@ -56,7 +55,7 @@
 	var/turf/nearest_beacon_loc	// the nearest beacon's location
 
 	//List of weapons that secbots will not arrest for, also copypasted in ed209.dm and metaldetector.dm
-	var/safe_weapons = list(
+	var/list/safe_weapons = list(
 		/obj/item/weapon/gun/energy/laser/bluetag,
 		/obj/item/weapon/gun/energy/laser/redtag,
 		/obj/item/weapon/gun/energy/laser/practice,
@@ -708,12 +707,8 @@ Auto Patrol: []"},
 	if(!src.allowed(perp)) //cops can do no wrong, unless set to arrest.
 
 		if(weaponscheck && !wpermit(perp))
-			if(istype(perp.l_hand, /obj/item/weapon/gun) || istype(perp.l_hand, /obj/item/weapon/melee))
-				if(!(perp.l_hand.type in safe_weapons))
-					threatcount += 4
-
-			if(istype(perp.r_hand, /obj/item/weapon/gun) || istype(perp.r_hand, /obj/item/weapon/melee))
-				if(!(perp.r_hand.type in safe_weapons))
+			for(var/obj/item/I in perp.held_items)
+				if(check_for_weapons(I))
 					threatcount += 4
 
 			if(istype(perp.belt, /obj/item/weapon/gun) || istype(perp.belt, /obj/item/weapon/melee))

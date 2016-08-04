@@ -1394,7 +1394,7 @@
 			M.u_equip(I,1)
 			if(I)
 				I.loc = locker
-				I.layer = initial(I.layer)
+				I.reset_plane_and_layer()
 				//I.dropped(M)
 
 		M.update_icons()
@@ -1472,7 +1472,7 @@
 			M.u_equip(I,1)
 			if(I)
 				I.loc = M.loc
-				I.layer = initial(I.layer)
+				I.reset_plane_and_layer()
 				//I.dropped(M)
 				I.loc = pack
 
@@ -1513,8 +1513,8 @@
 						oldhat = K.hat
 						K.hat = null
 						oldhat.loc = pack
-					K.equip_to_slot_or_del(ident, slot_r_hand)
-					K.equip_to_slot_or_del(new /obj/item/weapon/storage/belt/thunderdome/green(K), slot_l_hand)
+					K.put_in_hands(ident)
+					K.put_in_hands(new /obj/item/weapon/storage/belt/thunderdome/green(K))
 					K.regenerate_icons()
 
 			if("Red")
@@ -1540,8 +1540,8 @@
 						oldhat = K.hat
 						K.hat = null
 						oldhat.loc = pack
-					K.equip_to_slot_or_del(ident, slot_r_hand)
-					K.equip_to_slot_or_del(new /obj/item/weapon/storage/belt/thunderdome/red(K), slot_l_hand)
+					K.put_in_hands(ident)
+					K.put_in_hands(new /obj/item/weapon/storage/belt/thunderdome/red(K))
 					K.regenerate_icons()
 
 		if(pack.contents.len == 0)
@@ -1606,7 +1606,7 @@
 			M.u_equip(I,1)
 			if(I)
 				I.loc = M.loc
-				I.layer = initial(I.layer)
+				I.reset_plane_and_layer()
 				//I.dropped(M)
 
 		if(istype(M, /mob/living/carbon/human))
@@ -1728,6 +1728,23 @@
 		if(new_mob && new_mob != M)
 			if(new_mob.client == CLIENT) usr = new_mob //We probably transformed ourselves
 			show_player_panel(new_mob)
+
+	else if(href_list["changehands"])
+		if(!check_rights(R_SPAWN))	return
+
+		var/mob/M = locate(href_list["changehands"])
+		if(!istype(M))
+			return
+
+		var/max_hands = 40 //This number is randomly chosen
+
+		var/new_amount = input(usr, "Input a new amount of hands for [M] (current: [M.held_items.len]). WARNING: values larger than 4 may significantly clutter the UI. Maximum amount is [max_hands].", "Hands", M.held_items.len) as num
+		if(new_amount == null) return
+
+		new_amount = Clamp(new_amount, 0, max_hands)
+
+		M.set_hand_amount(new_amount)
+		to_chat(usr, "<span class='info'>Changed [M]'s amount of hands to [new_amount].</span>")
 
 	else if(href_list["togmutate"])
 		if(!check_rights(R_SPAWN))	return
@@ -1914,22 +1931,16 @@
 	else if(href_list["adminspawncookie"])
 		if(!check_rights(R_ADMIN|R_FUN))	return
 
-		var/mob/living/carbon/human/H = locate(href_list["adminspawncookie"])
-		if(!ishuman(H))
-			to_chat(usr, "This can only be used on instances of type /mob/living/carbon/human")
+		var/mob/living/carbon/H = locate(href_list["adminspawncookie"])
+		if(!iscarbon(H))
+			to_chat(usr, "This can only be used on instances of type /mob/living/carbon")
 			return
 
-		H.equip_to_slot_or_del( new /obj/item/weapon/reagent_containers/food/snacks/cookie(H), slot_l_hand )
-		if(!(istype(H.l_hand,/obj/item/weapon/reagent_containers/food/snacks/cookie)))
-			H.equip_to_slot_or_del( new /obj/item/weapon/reagent_containers/food/snacks/cookie(H), slot_r_hand )
-			if(!(istype(H.r_hand,/obj/item/weapon/reagent_containers/food/snacks/cookie)))
-				log_admin("[key_name(H)] has their hands full, so they did not receive their cookie, spawned by [key_name(src.owner)].")
-				message_admins("[key_name(H)] has their hands full, so they did not receive their cookie, spawned by [key_name(src.owner)].")
-				return
-			else
-				H.update_inv_r_hand()//To ensure the icon appears in the HUD
-		else
-			H.update_inv_l_hand()
+		if(!H.put_in_hands( new /obj/item/weapon/reagent_containers/food/snacks/cookie(H)))
+			log_admin("[key_name(H)] has their hands full, so they did not receive their cookie, spawned by [key_name(src.owner)].")
+			message_admins("[key_name(H)] has their hands full, so they did not receive their cookie, spawned by [key_name(src.owner)].")
+			return
+
 		log_admin("[key_name(H)] got their cookie, spawned by [key_name(src.owner)]")
 		message_admins("[key_name(H)] got their cookie, spawned by [key_name(src.owner)]")
 		feedback_inc("admin_cookies_spawned",1)
@@ -1970,6 +1981,7 @@
 			BSACooldown = 0
 
 		to_chat(M, "You've been hit by bluespace artillery!")
+
 		log_admin("[key_name(M)] has been hit by Bluespace Artillery fired by [src.owner]")
 		message_admins("[key_name(M)] has been hit by Bluespace Artillery fired by [src.owner]")
 
@@ -1984,6 +1996,8 @@
 		if(istype(T))
 			if(prob(80))	T.break_tile_to_plating()
 			else			T.break_tile()
+
+		playsound(T, 'sound/effects/yamato_fire.ogg', 75, 1, gas_modified = 0)
 
 		if(M.health == 1)
 			M.gib()
@@ -2344,17 +2358,37 @@
 				if(gravity_is_on)
 					log_admin("[key_name(usr)] toggled gravity on.", 1)
 					message_admins("<span class='notice'>[key_name_admin(usr)] toggled gravity on.</span>", 1)
-					command_alert("Gravity generators are again functioning within normal parameters. Sorry for any inconvenience.")
+					command_alert(/datum/command_alert/gravity_enabled)
 				else
 					log_admin("[key_name(usr)] toggled gravity off.", 1)
 					message_admins("<span class='notice'>[key_name_admin(usr)] toggled gravity off.</span>", 1)
-					command_alert("Feedback surge detected in mass-distributions systems. Artifical gravity has been disabled whilst the system reinitializes. Further failures may result in a gravitational collapse and formation of blackholes. Have a nice day.")
+					command_alert(/datum/command_alert/gravity_disabled)
 			if("wave")
 				feedback_inc("admin_secrets_fun_used",1)
 				feedback_add_details("admin_secrets_fun_used","Meteor")
 				log_admin("[key_name(usr)] spawned a meteor wave", 1)
 				message_admins("<span class='notice'>[key_name_admin(usr)] spawned a meteor wave.</span>", 1)
 				new /datum/event/meteor_wave
+
+			if("blobwave")
+				feedback_inc("admin_secrets_fun_used",1)
+				feedback_add_details("admin_secrets_fun_used","Blob Wave")
+				log_admin("[key_name(usr)] spawned a blob cluster", 1)
+				message_admins("<span class='notice'>[key_name_admin(usr)] spawned a blob cluster.</span>", 1)
+
+				if(alert(usr, "Spawn a blob cluster? (meteor blob, medium intensity, no Overminds)", "Blob Cluster", "Yes", "No") == "Yes")
+					new /datum/event/thing_storm/blob_shower
+
+			if("blobstorm")
+				feedback_inc("admin_secrets_fun_used",1)
+				feedback_add_details("admin_secrets_fun_used","Blob Storm")
+				log_admin("[key_name(usr)] spawned a blob conglomerate", 1)
+				message_admins("<span class='notice'>[key_name_admin(usr)] spawned a blob conglomerate.</span>", 1)
+
+				if(alert(usr, "Spawn a blob conglomerate? (meteor blob, high intensity, possible Overmind spawn)", "Blob Cluster", "Yes", "No") == "Yes")
+					new /datum/event/thing_storm/blob_storm
+
+				/*why were there two of those anyway? meteor blobs are an improvement either way.
 			if("goblob")
 				feedback_inc("admin_secrets_fun_used",1)
 				feedback_add_details("admin_secrets_fun_used","Blob")
@@ -2362,6 +2396,12 @@
 				message_admins("<span class='notice'>[key_name_admin(usr)] spawned a blob.</span>", 1)
 				new /datum/event/blob
 
+			if("goblob")
+				feedback_inc("admin_secrets_fun_used",1)
+				feedback_add_details("admin_secrets_fun_used","BL")
+				mini_blob_event()
+				message_admins("[key_name_admin(usr)] has spawned blob", 1)
+				*/
 			if("aliens")
 				feedback_inc("admin_secrets_fun_used",1)
 				feedback_add_details("admin_secrets_fun_used","Aliens")
@@ -2618,8 +2658,7 @@
 			if("gravanomalies")
 				feedback_inc("admin_secrets_fun_used",1)
 				feedback_add_details("admin_secrets_fun_used","GA")
-				command_alert("Gravitational anomalies detected on the station. There is no additional data.", "Anomaly Alert")
-				world << sound('sound/AI/granomalies.ogg')
+				command_alert(/datum/command_alert/wormholes)
 				var/turf/T = pick(blobstart)
 				var/obj/effect/bhole/bh = new /obj/effect/bhole( T.loc, 30 )
 				spawn(rand(100, 600))
@@ -2632,11 +2671,6 @@
 				//can be found in code\game\game_modes\events\wormholes.dm
 				wormhole_event()
 
-			if("goblob")
-				feedback_inc("admin_secrets_fun_used",1)
-				feedback_add_details("admin_secrets_fun_used","BL")
-				mini_blob_event()
-				message_admins("[key_name_admin(usr)] has spawned blob", 1)
 			if("aliens")
 				feedback_inc("admin_secrets_fun_used",1)
 				feedback_add_details("admin_secrets_fun_used","AL")
@@ -2746,7 +2780,7 @@
 					if(F.z == 1)
 						F.name = "lava"
 						F.desc = "The floor is LAVA!"
-						F.overlays += "lava"
+						F.overlays += image(icon = F.icon, icon_state = "lava")
 						F.lava = 1
 						lavaturfs += F
 
@@ -2833,7 +2867,7 @@
 					var/turf/U = pick(turflist)
 					var/obj/structure/closet/crate/secure/weapon/experimental/E = new(U)
 					to_chat(C, "<span class='danger'>A crate appears next to you. You think you can read \"[E.chosen_set]\" scribbled on it</span>")
-					U.turf_animation('icons/effects/96x96.dmi',"beamin",-32,0,MOB_LAYER+1,'sound/weapons/emitter2.ogg')
+					U.turf_animation('icons/effects/96x96.dmi',"beamin",-32,0,MOB_LAYER+1,'sound/weapons/emitter2.ogg',anim_plane = MOB_PLANE)
 				message_admins("[key_name_admin(usr)] distributed experimental guns to the entire crew")
 			if("schoolgirl")
 				feedback_inc("admin_secrets_fun_used",1)
@@ -2851,7 +2885,7 @@
 					if(W.z == 1 && !istype(get_area(W), /area/bridge) && !istype(get_area(W), /area/crew_quarters) && !istype(get_area(W), /area/security/prison))
 						W.req_access = list()
 				message_admins("[key_name_admin(usr)] activated Egalitarian Station mode")
-				command_alert("Centcomm airlock control override activated. Please take this time to get acquainted with your coworkers.")
+				command_alert(/datum/command_alert/eagles)
 			if("dorf")
 				feedback_inc("admin_secrets_fun_used",1)
 				feedback_add_details("admin_secrets_fun_used","DF")
@@ -2866,7 +2900,7 @@
 				message_admins("[key_name_admin(usr)] triggered an ion storm")
 				var/show_log = alert(usr, "Show ion message?", "Message", "Yes", "No")
 				if(show_log == "Yes")
-					command_alert("Ion storm detected near the station. Please check all AI-controlled equipment for errors.", "Anomaly Alert",alert='sound/AI/ionstorm.ogg')
+					command_alert(/datum/command_alert/ion_storm)
 			if("spacevines")
 				feedback_inc("admin_secrets_fun_used",1)
 				feedback_add_details("admin_secrets_fun_used","K")
@@ -2875,7 +2909,7 @@
 			if("onlyone")
 				feedback_inc("admin_secrets_fun_used",1)
 				feedback_add_details("admin_secrets_fun_used","OO")
-				usr.client.only_one()
+				usr.client.only_one(usr)
 //				message_admins("[key_name_admin(usr)] has triggered a battle to the death (only one)")
 			if("togglenarsie")
 				feedback_inc("admin_secrets_fun_used",1)
@@ -2890,19 +2924,35 @@
 			if("hellonearth")
 				feedback_inc("admin_secrets_fun_used",1)
 				feedback_add_details("admin_secrets_fun_used","NS")
-				var/choice = input("You sure you want to end the round and summon narsie at your location? Misuse of this could result in removal of flags or halarity.") in list("PRAISE SATAN", "Cancel")
+				var/choice = input("You sure you want to end the round and summon narsie at your location? Misuse of this could result in removal of flags or hilarity.") in list("PRAISE SATAN", "Cancel")
 				if(choice == "PRAISE SATAN")
 					new /obj/machinery/singularity/narsie/large(get_turf(usr))
 					message_admins("[key_name_admin(usr)] has summoned narsie and brought about a new realm of suffering.")
 			if("supermattercascade")
 				feedback_inc("admin_secrets_fun_used",1)
 				feedback_add_details("admin_secrets_fun_used","SC")
-				var/choice = input("You sure you want to destroy the universe and create a large explosion at your location? Misuse of this could result in removal of flags or halarity.") in list("NO TIME TO EXPLAIN", "Cancel")
+				var/choice = input("You sure you want to destroy the universe and create a large explosion at your location? Misuse of this could result in removal of flags or hilarity.") in list("NO TIME TO EXPLAIN", "Cancel")
 				if(choice == "NO TIME TO EXPLAIN")
 					explosion(get_turf(usr), 8, 16, 24, 32, 1)
 					new /turf/unsimulated/wall/supermatter(get_turf(usr))
 					SetUniversalState(/datum/universal_state/supermatter_cascade)
 					message_admins("[key_name_admin(usr)] has managed to destroy the universe with a supermatter cascade. Good job, [key_name_admin(usr)]")
+			if("meteorstorm")
+				feedback_inc("admin_secrets_fun_used",1)
+				feedback_add_details("admin_secrets_fun_used","MS")
+				var/choice = input("Are you sure you want to summon an unending hail of meteors and force station evacuation? This will only work properly if the shuttle is not in use. Misuse of this could result in removal of flags or hilarity.") in list("BRING ME MY FRIDGE", "Cancel")
+				if(choice == "BRING ME MY FRIDGE")
+					//We go through a boring amount of variable prompts first
+					var/extra_delay = input("Input an extra delay before warning and announcement, in tenths of seconds. Default is 100", 100) as num|null
+					var/supply_delay = input("Input an extra delay before supply, in tenths of seconds; Default is 100", 100) as num|null
+					var/shuttle_delay = input("Input a shuttle delay multiplier, times ten minutes. Default is 3", 3) as num|null
+					var/meteor_delay = input("Input the delay before meteors start striking, in tenths of seconds. Keep null to generate between 7.5 to 10 minutes. Default is null", 0) as num|null
+					var/meteor_size_l = input("Input a lower interval on the amount of meteors per wave. Default is 150", 150) as num|null
+					var/meteor_size_h = input("Input an upper interval on the amount of meteors per wave. Default is 200", 200) as num|null
+					var/choice_second = input("Are you still sure you want to summon a meteor storm? Misuse of this could result in removal of flags or hilarity.") in list("WORKED FOR INDIANA JONES", "Cancel")
+					if(choice_second == "WORKED FOR INDIANA JONES")
+						meteor_universal_state(1, extra_delay, supply_delay, shuttle_delay, meteor_delay, meteor_size_l, meteor_size_h)
+						message_admins("[key_name_admin(usr)] has summoned an unending meteor storm upon the station. Go ahead and ask him for the details, don't forget to scream at him.")
 			if("mobswarm")
 				feedback_inc("admin_secrets_fun_used",1)
 				feedback_add_details("admin_secrets_fun_used","MS")
@@ -2934,7 +2984,7 @@
 				D.equip_to_slot_or_del(new /obj/item/device/radio/headset/heads/captain(D), slot_ears)
 				D.equip_to_slot_or_del(new /obj/item/weapon/storage/backpack/satchel(D), slot_back)
 				D.equip_to_slot_or_del(new /obj/item/weapon/storage/box/survival/engineer(D.back), slot_in_backpack)
-				T.turf_animation('icons/effects/96x96.dmi',"beamin",-32,0,MOB_LAYER+1,'sound/misc/adminspawn.ogg')
+				T.turf_animation('icons/effects/96x96.dmi',"beamin",-32,0,MOB_LAYER+1,'sound/misc/adminspawn.ogg',anim_plane = MOB_PLANE)
 				D.name = "Admin"
 				D.real_name = "Admin"
 				var/newname = ""
@@ -2964,14 +3014,14 @@
 					log_admin("[key_name_admin(usr)] triggered a FAKE Biohzard Alert.")
 					return
 				if(choice == "Lifesigns") //MUH ALIUMS
-					command_alert("Unidentified lifesigns detected coming aboard [station_name()]. Secure any exterior access, including ducting and ventilation.", "Lifesign Alert",alert='sound/AI/aliens.ogg')
+					command_alert(/datum/command_alert/xenomorphs)
 					message_admins("[key_name_admin(usr)] triggered a FAKE Lifesign Alert.")
 					log_admin("[key_name_admin(usr)] triggered a FAKE Lifesign Alert.")
 					return
 				if(choice == "Malfunction") //BLOW EVERYTHING
 					var/salertchoice = input("Do you wish to include the Hostile Runtimes warning to have an authentic Malfunction Takeover Alert ?", "Nanotrasen Alert Level Monitor") in list("Yes", "No")
 					if(salertchoice == "Yes")
-						command_alert("Hostile runtimes detected in all station systems, please deactivate your AI to prevent possible damage to its morality core.", "Anomaly Alert",alert='sound/AI/aimalf.ogg')
+						command_alert(/datum/command_alert/malf_announce)
 					to_chat(world, "<font size=4 color='red'>Attention! Delta security level reached!</font>")//Don't ACTUALLY set station alert to Delta to avoid fucking shit up for real
 
 					to_chat(world, "<font color='red'>[config.alert_desc_delta]</font>")
@@ -2980,17 +3030,17 @@
 					log_admin("[key_name_admin(usr)] triggered a FAKE Malfunction Takeover Alert (Hostile Runtimes alert [salertchoice == "Yes" ? "included":"excluded"])")
 					return
 				if(choice == "Ion")
-					command_alert("Ion storm detected near the station. Please check all AI-controlled equipment for errors.", "Anomaly Alert",alert='sound/AI/ionstorm.ogg')
+					command_alert(/datum/command_alert/ion_storm)
 					message_admins("[key_name_admin(usr)] triggered a FAKE Ion Alert.")
 					log_admin("[key_name_admin(usr)] triggered a FAKE Ion Alert.")
 					return
 				if(choice == "Meteor Wave")
-					command_alert("A meteor storm has been detected on collision course with the station. Seek shelter within the core of the station immediately.", "Meteor Alert",alert='sound/AI/meteors.ogg')
+					command_alert(/datum/command_alert/meteor_wave)
 					message_admins("[key_name_admin(usr)] triggered a FAKE Meteor Alert.")
 					log_admin("[key_name_admin(usr)] triggered a FAKE Meteor Alert.")
 					return
 				if(choice == "Carp Migration")
-					command_alert("Unknown biological entities have been detected near [station_name()], please stand-by.", "Lifesign Alert")
+					command_alert(/datum/command_alert/carp)
 					message_admins("[key_name_admin(usr)] triggered a FAKE Carp Migration Alert.")
 					log_admin("[key_name_admin(usr)] triggered a FAKE Carp Migration Alert.")
 					return
@@ -4054,3 +4104,37 @@
 
 
 	//------------------------------------------------------------------Shuttle stuff end---------------------------------
+
+	if(href_list["wages_enabled"])
+		if(check_rights(R_ADMIN))
+			if(ticker.current_state == 1)
+				to_chat(usr, "Round hasn't started yet!")
+				return
+			if(href_list["wages_enabled"] == "enable")
+				if(wages_enabled)
+					to_chat(usr, "Wages are already enabled!")
+				else
+					wages_enabled = 1
+					message_admins("<span class='notice'>[key_name_admin(usr)] has enabled wages!")
+			else if(href_list["wages_enabled"] == "disable")
+				if(!wages_enabled)
+					to_chat(usr, "Wages are already disabled!")
+				else
+					wages_enabled = 0
+					message_admins("<span class='notice'>[key_name_admin(usr)] has disabled wages!")
+		return
+	if(href_list["econ_panel"])
+		var/choice = href_list["econ_panel"]
+		EconomyPanel(choice, href_list)
+
+
+	else if (href_list["viewruntime"])
+		var/datum/error_viewer/error_viewer = locate(href_list["viewruntime"])
+		if (!istype(error_viewer))
+			to_chat(owner, "<span class='warning'>That runtime viewer no longer exists.</span>")
+			return
+
+		if (href_list["viewruntime_backto"])
+			error_viewer.show_to(owner, locate(href_list["viewruntime_backto"]), href_list["viewruntime_linear"])
+		else
+			error_viewer.show_to(owner, null, href_list["viewruntime_linear"])

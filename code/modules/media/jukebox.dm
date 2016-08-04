@@ -17,6 +17,8 @@
 
 var/global/global_playlists = list()
 /proc/load_juke_playlists()
+	if(!config.media_base_url)
+		return
 	for(var/playlist_id in list("bar", "jazz", "rock", "muzak", "emagged", "endgame", "clockwork", "vidyaone", "vidyatwo", "vidyathree", "vidyafour"))
 		var/url="[config.media_base_url]/index.php?playlist=[playlist_id]"
 		testing("Updating playlist from [url]...")
@@ -46,6 +48,8 @@ var/global/global_playlists = list()
 			global_playlists["[playlist_id]"] = playlist.Copy()
 
 /obj/machinery/media/jukebox/proc/retrieve_playlist(var/playlistid = playlist_id)
+	if(!config.media_base_url)
+		return
 	playlist_id = playlistid
 	if(global_playlists["[playlistid]"])
 		var/list/temp = global_playlists["[playlistid]"]
@@ -240,9 +244,9 @@ var/global/list/loopModeNames=list(
 	icon_state = state_base
 	if(playing)
 		if(emagged)
-			overlays += "[state_base]-emagged"
+			overlays += image(icon = icon, icon_state = "[state_base]-emagged")
 		else
-			overlays += "[state_base]-running"
+			overlays += image(icon = icon, icon_state = "[state_base]-running")
 
 /obj/machinery/media/jukebox/proc/check_reload()
 	return world.time > last_reload + JUKEBOX_RELOAD_COOLDOWN
@@ -378,7 +382,7 @@ var/global/list/loopModeNames=list(
 	. = ..()
 	if(.)
 		return .
-	if(istype(W, /obj/item/device/multitool)||iswirecutter(W))
+	if(iswiretool(W))
 		if(panel_open)
 			wires.Interact(user)
 		return
@@ -721,7 +725,7 @@ var/global/list/loopModeNames=list(
 	icon_state = ""
 	light_color = LIGHT_COLOR_BLUE
 	luminosity = 0
-	layer = FLY_LAYER+1
+	plane = EFFECTS_PLANE
 	pixel_x = -32
 	pixel_y = -32
 
@@ -766,7 +770,7 @@ var/global/list/loopModeNames=list(
 
 /obj/machinery/media/jukebox/superjuke/adminbus/update_icon()
 	if(playing)
-		overlays += "beats"
+		overlays += image(icon = icon, icon_state = "beats")
 	else
 		overlays = 0
 	return
@@ -776,6 +780,3 @@ var/global/list/loopModeNames=list(
 
 /obj/machinery/media/jukebox/superjuke/adminbus/cultify()
 	return
-
-/obj/machinery/media/jukebox/superjuke/adminbus/singuloCanEat()
-	return 0

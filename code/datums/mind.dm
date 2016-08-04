@@ -69,6 +69,7 @@
 
 	//fix scrying raging mages issue.
 	var/isScrying = 0
+	var/list/heard_before = list()
 
 
 /datum/mind/New(var/key)
@@ -662,7 +663,7 @@
 						cult.memoize_cult_objectives(src)
 					to_chat(current, "<span class='danger'><FONT size = 3>You have been brainwashed! You are no longer a cultist!</FONT></span>")
 					to_chat(current, "<span class='danger'>You find yourself unable to mouth the words of the forgotten...</span>")
-					current.remove_language("Cult")
+					current.remove_language(LANGUAGE_CULT)
 					memory = ""
 					log_admin("[key_name_admin(usr)] has de-cult'ed [current].")
 			if("cultist")
@@ -675,7 +676,7 @@
 					var/wikiroute = role_wiki[ROLE_CULTIST]
 					to_chat(current, "<span class='info'><a HREF='?src=\ref[current];getwiki=[wikiroute]'>(Wiki Guide)</a></span>")
 					to_chat(current, "<span class='sinister'>You can now speak and understand the forgotten tongue of the occult.</span>")
-					current.add_language("Cult")
+					current.add_language(LANGUAGE_CULT)
 					var/datum/game_mode/cult/cult = ticker.mode
 					if (istype(cult))
 						cult.memoize_cult_objectives(src)
@@ -689,10 +690,9 @@
 						"backpack" = slot_in_backpack,
 						"left pocket" = slot_l_store,
 						"right pocket" = slot_r_store,
-						"left hand" = slot_l_hand,
-						"right hand" = slot_r_hand,
 					)
-					var/where = H.equip_in_one_of_slots(T, slots)
+					var/where = H.equip_in_one_of_slots(T, slots,  )
+
 					if (!where)
 						to_chat(usr, "<span class='warning'>Spawning tome failed!</span>")
 					else
@@ -737,23 +737,11 @@
 		switch(href_list["changeling"])
 			if("clear")
 				if(src in ticker.mode.changelings)
-					ticker.mode.changelings -= src
-					special_role = null
-					current.remove_changeling_powers()
-					current.verbs -= /datum/changeling/proc/EvolutionMenu
-					if(changeling)
-						qdel(changeling)
-						changeling = null
-					to_chat(current, "<FONT color='red' size = 3><B>You grow weak and lose your powers! You are no longer a changeling and are stuck in your current form!</B></FONT>")
+					remove_changeling_status()
 					log_admin("[key_name_admin(usr)] has de-changeling'ed [current].")
 			if("changeling")
 				if(!(src in ticker.mode.changelings))
-					ticker.mode.changelings += src
-					ticker.mode.grant_changeling_powers(current)
-					special_role = "Changeling"
-					to_chat(current, "<B><font color='red'>Your powers are awoken. A flash of memory returns to us...we are a changeling!</font></B>")
-					var/wikiroute = role_wiki[ROLE_CHANGELING]
-					to_chat(current, "<span class='info'><a HREF='?src=\ref[current];getwiki=[wikiroute]'>(Wiki Guide)</a></span>")
+					make_new_changeling(1, 0)
 					log_admin("[key_name_admin(usr)] has changeling'ed [current].")
 			if("autoobjectives")
 				ticker.mode.forge_changeling_objectives(src)
@@ -780,22 +768,11 @@
 		switch(href_list["vampire"])
 			if("clear")
 				if(src in ticker.mode.vampires)
-					ticker.mode.vampires -= src
-					special_role = null
-					current.remove_vampire_powers()
-					if(vampire)
-						qdel(vampire)
-						vampire = null
-					to_chat(current, "<FONT color='red' size = 3><B>You grow weak and lose your powers! You are no longer a vampire and are stuck in your current form!</B></FONT>")
+					remove_vampire_status()
 					log_admin("[key_name_admin(usr)] has de-vampired [current].")
 			if("vampire")
 				if(!(src in ticker.mode.vampires))
-					ticker.mode.vampires += src
-					ticker.mode.grant_vampire_powers(current)
-					special_role = "Vampire"
-					to_chat(current, "<B><font color='red'>Your powers are awoken. Your lust for blood grows... You are a Vampire!</font></B>")
-					var/wikiroute = role_wiki[ROLE_VAMPIRE]
-					to_chat(current, "<span class='info'><a HREF='?src=\ref[current];getwiki=[wikiroute]'>(Wiki Guide)</a></span>")
+					make_new_vampire(1, 0)
 					log_admin("[key_name_admin(usr)] has vampired [current].")
 			if("autoobjectives")
 				ticker.mode.forge_vampire_objectives(src)
@@ -1206,7 +1183,7 @@ proc/clear_memory(var/silent = 1)
 		to_chat(current, "<span class='sinister'>You catch a glimpse of the Realm of Nar-Sie, The Geometer of Blood. You now see how flimsy the world is, you see that it should be open to the knowledge of Nar-Sie.</span>")
 		to_chat(current, "<span class='sinister'>Assist your new compatriots in their dark dealings. Their goal is yours, and yours is theirs. You serve the Dark One above all else. Bring It back.</span>")
 		to_chat(current, "<span class='sinister'>You can now speak and understand the forgotten tongue of the occult.</span>")
-		current.add_language("Cult")
+		current.add_language(LANGUAGE_CULT)
 		var/datum/game_mode/cult/cult = ticker.mode
 		if (istype(cult))
 			cult.memoize_cult_objectives(src)
@@ -1225,12 +1202,10 @@ proc/clear_memory(var/silent = 1)
 			"backpack" = slot_in_backpack,
 			"left pocket" = slot_l_store,
 			"right pocket" = slot_r_store,
-			"left hand" = slot_l_hand,
-			"right hand" = slot_r_hand,
 		)
-		var/where = H.equip_in_one_of_slots(T, slots)
-		if (!where)
-		else
+		var/where = H.equip_in_one_of_slots(T, slots, put_in_hand_if_fail = 1)
+
+		if(where)
 			to_chat(H, "A tome, a message from your new master, appears in your [where].")
 
 	if (!ticker.mode.equip_cultist(current))
@@ -1421,10 +1396,15 @@ proc/clear_memory(var/silent = 1)
 	mind.assigned_role = "Armalis"
 	mind.special_role = "Vox Raider"
 
+/proc/get_ghost_from_mind(var/datum/mind/mind)
+	if(!mind)
+		return
+	for(var/mob/dead/observer/G in player_list)
+		if(G.mind == mind)
+			return G
 
 /proc/mind_can_reenter(var/datum/mind/mind)
-	if(mind)
-		for(var/mob/dead/observer/G in player_list)
-			if(G.can_reenter_corpse && G.mind == mind)
-				return TRUE
+	var/mob/dead/observer/G = get_ghost_from_mind(mind)
+	if(G && G.client && G.can_reenter_corpse)
+		return TRUE
 	return FALSE

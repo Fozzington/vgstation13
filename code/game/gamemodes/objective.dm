@@ -508,7 +508,7 @@ var/list/potential_theft_objectives=list(
 				already_completed = 1
 				return 1
 
-		var/datum/organ/external/head/head = H.get_organ("head")
+		var/datum/organ/external/head/head = H.get_organ(LIMB_HEAD)
 		if(head.disfigured)
 			return 1
 	return 0
@@ -535,6 +535,9 @@ var/list/potential_theft_objectives=list(
 
 		var/pickedObjective = pick(possibleObjectives)
 		var/datum/theft_objective/objective = new pickedObjective
+
+		if(objective.typepath in map.unavailable_items)
+			continue
 
 		if(owner && owner.assigned_role in objective.protected_jobs)
 			continue

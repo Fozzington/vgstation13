@@ -3,6 +3,8 @@
 #define GAS 3
 #define FORMAT_DISPENSER_NAME 15
 
+#define MAX_PILL_SPRITE 20 //Max icon state of the pill sprites
+
 /obj/machinery/chem_dispenser
 	name = "\improper Chem Dispenser"
 	density = 1
@@ -19,9 +21,9 @@
 	var/recharged = 0
 	var/custom = 0
 	var/useramount = 30 // Last used amount
-	var/list/dispensable_reagents = list("hydrogen","lithium","carbon","nitrogen","oxygen","fluorine",
-	"sodium","aluminum","silicon","phosphorus","sulfur","chlorine","potassium","iron",
-	"copper","mercury","radium","water","ethanol","sugar","sacid","tungsten")
+	var/list/dispensable_reagents = list(HYDROGEN,LITHIUM,CARBON,NITROGEN,OXYGEN,FLUORINE,
+	SODIUM,ALUMINUM,SILICON,PHOSPHORUS,SULFUR,CHLORINE,POTASSIUM,IRON,
+	COPPER,MERCURY,RADIUM,WATER,ETHANOL,SUGAR,SACID,TUNGSTEN)
 
 	machine_flags = SCREWTOGGLE | CROWDESTROY | WRENCHMOVE | FIXED2WORK
 
@@ -307,7 +309,7 @@ USE THIS CHEMISTRY DISPENSER FOR MAPS SO THEY START AT 100 ENERGY
 /obj/machinery/chem_dispenser/brewer/
 	name = "Space-Brewery"
 	icon_state = "brewer"
-	dispensable_reagents = list("tea","greentea","redtea", "coffee","milk","cream","water","hot_coco", "soymilk")
+	dispensable_reagents = list(TEA,GREENTEA,REDTEA, COFFEE,MILK,CREAM,WATER,HOT_COCO, SOYMILK)
 /obj/machinery/chem_dispenser/brewer/New()
 	. = ..()
 	component_parts = newlist(
@@ -339,7 +341,7 @@ USE THIS CHEMISTRY DISPENSER FOR MAPS SO THEY START AT 100 ENERGY
 /obj/machinery/chem_dispenser/soda_dispenser/
 	name = "Soda Dispenser"
 	icon_state = "soda_dispenser"
-	dispensable_reagents = list("spacemountainwind", "sodawater", "lemon_lime", "dr_gibb", "cola", "ice", "tonic")
+	dispensable_reagents = list(SPACEMOUNTAINWIND, SODAWATER, LEMON_LIME, DR_GIBB, COLA, ICE, TONIC)
 /obj/machinery/chem_dispenser/soda_dispenser/New()
 	. = ..()
 	component_parts = newlist(
@@ -369,7 +371,7 @@ USE THIS CHEMISTRY DISPENSER FOR MAPS SO THEY START AT 100 ENERGY
 /obj/machinery/chem_dispenser/booze_dispenser/
 	name = "Booze Dispenser"
 	icon_state = "booze_dispenser"
-	dispensable_reagents = list("beer", "whiskey", "tequila", "vodka", "vermouth", "rum", "cognac", "wine", "kahlua", "ale", "ice", "water", "gin", "sodawater", "cola", "cream","tomatojuice","orangejuice","limejuice","tonic")
+	dispensable_reagents = list(BEER, WHISKEY, TEQUILA, VODKA, VERMOUTH, RUM, COGNAC, WINE, KAHLUA, ALE, ICE, WATER, GIN, SODAWATER, COLA, CREAM,TOMATOJUICE,ORANGEJUICE,LIMEJUICE,TONIC)
 /obj/machinery/chem_dispenser/booze_dispenser/New()
 	. = ..()
 	component_parts = newlist(
@@ -409,15 +411,17 @@ USE THIS CHEMISTRY DISPENSER FOR MAPS SO THEY START AT 100 ENERGY
 	idle_power_usage = 20
 	var/obj/item/weapon/reagent_containers/glass/beaker = null
 	var/obj/item/weapon/storage/pill_bottle/loaded_pill_bottle = null
-	var/mode = 0
+	var/mode = 1
 	var/condi = 0
 	var/windowtype = "chem_master" //For the browser windows
 	var/useramount = 30 // Last used amount
-	var/pillamount = 10
+	var/last_pill_amt = 10
+	var/last_bottle_amt = 3
 	//var/bottlesprite = "1" //yes, strings
 	var/pillsprite = "1"
 
-	var/client/has_sprites = list()
+	var/global/list/pill_icon_cache
+
 	var/chem_board = /obj/item/weapon/circuitboard/chemmaster3000
 	var/max_bottle_size = 30
 	var/max_pill_count = 20
@@ -454,6 +458,9 @@ USE THIS CHEMISTRY DISPENSER FOR MAPS SO THEY START AT 100 ENERGY
 
 	RefreshParts()
 	update_icon() //Needed to add the prongs cleanly
+
+	if (!pill_icon_cache)
+		generate_pill_icon_cache()
 
 /obj/machinery/chem_master/RefreshParts()
 	var/scancount = 0
@@ -650,8 +657,9 @@ USE THIS CHEMISTRY DISPENSER FOR MAPS SO THEY START AT 100 ENERGY
 
 		else if(href_list["createpill"] || href_list["createpill_multiple"])
 			var/count = 1
-			if(href_list["createpill_multiple"]) count = isgoodnumber(input("Select the number of pills to make.", 10, pillamount) as num)
+			if(href_list["createpill_multiple"]) count = isgoodnumber(input("Select the number of pills to make.", "Amount:", last_pill_amt) as num)
 			count = min(max_pill_count, count)
+			last_pill_amt = count
 			if(!count)
 				return
 
@@ -664,6 +672,8 @@ USE THIS CHEMISTRY DISPENSER FOR MAPS SO THEY START AT 100 ENERGY
 			var/name = reject_bad_text(input(usr,"Name:","Name your pill!","[reagents.get_master_reagent_name()] ([amount_per_pill] units)") as null|text)
 			if(!name)
 				return
+
+			var/logged_message = " - [key_name(usr)] has made [count] pill[count > 1 ? "s, each" : ""] named '[name]' and containing "
 
 			while(count--)
 				if((amount_per_pill == 0 || reagents.total_volume == 0) && !href_list["createempty"]) //Don't create empty pills unless "createempty" is 1!
@@ -680,6 +690,10 @@ USE THIS CHEMISTRY DISPENSER FOR MAPS SO THEY START AT 100 ENERGY
 				if(src.loaded_pill_bottle)
 					if(loaded_pill_bottle.contents.len < loaded_pill_bottle.storage_slots)
 						P.loc = loaded_pill_bottle
+				if(count == 0) //only do this ONCE
+					logged_message += "[P.reagents.get_reagent_ids(1)]"
+
+			investigation_log(I_CHEMS, logged_message)
 
 			src.updateUsrDialog()
 			return 1
@@ -688,8 +702,9 @@ USE THIS CHEMISTRY DISPENSER FOR MAPS SO THEY START AT 100 ENERGY
 			if(!condi)
 				var/count = 1
 				if(href_list["createbottle_multiple"])
-					count = isgoodnumber(input("Select the number of bottles to make.", 10, count) as num)
+					count = isgoodnumber(input("Select the number of bottles to make.", "Amount:", last_bottle_amt) as num)
 				count = Clamp(count, 1, 4)
+				last_bottle_amt = count
 				var/amount_per_bottle = reagents.total_volume > 0 ? reagents.total_volume/count : 0
 				amount_per_bottle = min(amount_per_bottle,max_bottle_size)
 
@@ -711,28 +726,6 @@ USE THIS CHEMISTRY DISPENSER FOR MAPS SO THEY START AT 100 ENERGY
 				reagents.trans_to(P, 50)
 				src.updateUsrDialog()
 				return 1
-
-		else if(href_list["change_pill"])
-			#define MAX_PILL_SPRITE 20 //Max icon state of the pill sprites
-			var/dat = list()
-			dat += "<table>"
-			for(var/i = 1 to MAX_PILL_SPRITE)
-				if(i%4 == 1)
-					dat += "<tr>"
-
-				dat += "<td><a href=\"?src=\ref[src]&pill_sprite=[i]\"><img src=\"pill[i].png\" /></a></td>"
-
-				if (i%4 == 0)
-					dat +="</tr>"
-
-			dat += "</table>"
-			dat = jointext(dat,"")
-			var/datum/browser/popup = new(usr, "[windowtype]", "[name]", 585, 400, src)
-			popup.set_content(dat)
-			popup.open()
-			onclose(usr, "[windowtype]")
-			//usr << browse(dat, "window=[windowtype]")
-			return 1
 
 		/*
 		else if(href_list["change_bottle"])
@@ -790,22 +783,19 @@ USE THIS CHEMISTRY DISPENSER FOR MAPS SO THEY START AT 100 ENERGY
 /obj/machinery/chem_master/attack_paw(mob/user as mob)
 	return src.attack_hand(user)
 
-/obj/machinery/chem_master/attack_hand(mob/user as mob)
 
+/obj/machinery/chem_master/proc/generate_pill_icon_cache()
+	pill_icon_cache = list()
+	for(var/i = 1 to MAX_PILL_SPRITE)
+		pill_icon_cache += "<img src='data:image/png;base64,[icon2base64(icon('icons/obj/chemical.dmi', "pill" + num2text(i)))]'>"
+		//This is essentially just bicon(). Ideally we WOULD use just bicon(), but right now it's fucked up when used on icons because it goes by their \ref.
+
+/obj/machinery/chem_master/attack_hand(mob/user as mob)
 	. = ..()
 	if(.)
 		return
 
 	user.set_machine(src)
-	if(!(user.client in has_sprites))
-		spawn()
-			has_sprites += user.client
-			for(var/i = 1 to MAX_PILL_SPRITE)
-				usr << browse_rsc(icon('icons/obj/chemical.dmi', "pill" + num2text(i)), "pill[i].png")
-			/*
-			for(var/i = 1 to MAX_BOTTLE_SPRITE)
-				usr << browse_rsc(icon('icons/obj/chemical.dmi', "bottle" + num2text(i)), "bottle[i].png")
-			*/
 
 	var/dat = list()
 	if(!beaker)
@@ -851,10 +841,20 @@ USE THIS CHEMISTRY DISPENSER FOR MAPS SO THEY START AT 100 ENERGY
 		else
 			dat += "Buffer is empty.<BR>"
 		if(!condi)
-
 			//dat += {"<a href=\"?src=\ref[src]&change_pill=1\"><img src=\"pill[pillsprite].png\" /></a><a href=\"?src=\ref[src]&change_bottle=1\"><img src=\"bottle[bottlesprite].png\" /></a><BR>"}
-			dat += {"<a href=\"?src=\ref[src]&change_pill=1\"><img src=\"pill[pillsprite].png\" /></a><BR>"}
-			dat += {"<HR><BR><A href='?src=\ref[src];createpill=1'>Create single pill (50 units max)</A><BR>
+			//dat += {"<a href=\"?src=\ref[src]&change_pill=1\"><img src=\"pill[pillsprite].png\" /></a><BR>"}
+
+			dat += {"<div class="li" style="padding: 0px 0px 4px;"></div>"}
+			for(var/i = 1 to MAX_PILL_SPRITE)
+				dat += {"<a href="?src=\ref[src]&pill_sprite=[i]" style="display: inline-block; padding:0px 4px 0px 4px; margin:0 2px 2px 0; [i == text2num(pillsprite) ? "background: #2f943c;" : ""]"> <!--Yes we are setting the style here because I suck at CSS and I have no shame-->
+							<div class="pillIcon">
+								[pill_icon_cache[i]]
+							</div>
+						</a>"}
+				if (i%10 == 0)
+					dat +="<br>"
+
+			dat += {"<HR><A href='?src=\ref[src];createpill=1'>Create single pill (50 units max)</A><BR>
 					<A href='?src=\ref[src];createpill_multiple=1'>Create multiple pills (50 units max each; [max_pill_count] max)</A><BR>
 					<A href='?src=\ref[src];createpill_multiple=1;createempty=1'>Create empty pills</A><BR>
 					<A href='?src=\ref[src];createbottle=1'>Create bottle ([max_bottle_size] units max)</A><BR>
@@ -862,7 +862,7 @@ USE THIS CHEMISTRY DISPENSER FOR MAPS SO THEY START AT 100 ENERGY
 		else
 			dat += "<A href='?src=\ref[src];createbottle=1'>Create bottle (50 units max)</A>"
 	dat = jointext(dat,"")
-	var/datum/browser/popup = new(user, "[windowtype]", "[name]", 575, 400, src)
+	var/datum/browser/popup = new(user, "[windowtype]", "[name]", 575, 500, src)
 	popup.set_content(dat)
 	popup.open()
 	onclose(user, "[windowtype]")
@@ -996,7 +996,7 @@ USE THIS CHEMISTRY DISPENSER FOR MAPS SO THEY START AT 100 ENERGY
 
 				if(D)
 					B.name = "[D.name] vaccine bottle"
-					B.reagents.add_reagent("vaccine",15,vaccine_type)
+					B.reagents.add_reagent(VACCINE,15,vaccine_type)
 					wait = 1
 					var/datum/reagents/R = beaker.reagents
 					var/datum/reagent/blood/Blood = null
@@ -1029,7 +1029,7 @@ USE THIS CHEMISTRY DISPENSER FOR MAPS SO THEY START AT 100 ENERGY
 			if(!name || name == " ") name = D.name
 			B.name = "[name] culture bottle"
 			B.desc = "A small bottle. Contains [D.agent] culture in synthblood medium."
-			B.reagents.add_reagent("blood",20,data)
+			B.reagents.add_reagent(BLOOD,20,data)
 			src.updateUsrDialog()
 			wait = 1
 			spawn(1000)
@@ -1081,7 +1081,7 @@ USE THIS CHEMISTRY DISPENSER FOR MAPS SO THEY START AT 100 ENERGY
 		else
 			beaker.loc = beaker:holder
 	beaker = null
-	overlays -= "mixer_overlay"
+	overlays -= image(icon = icon, icon_state = "mixer_overlay")
 	src.updateUsrDialog()
 
 /obj/machinery/computer/pandemic/attack_ai(mob/user as mob)
@@ -1205,7 +1205,7 @@ USE THIS CHEMISTRY DISPENSER FOR MAPS SO THEY START AT 100 ENERGY
 		to_chat(user, "You add the beaker to the machine!")
 
 		src.updateUsrDialog()
-		overlays += "mixer_overlay"
+		overlays += image(icon = icon, icon_state = "mixer_overlay")
 
 	else
 		..()
@@ -1217,7 +1217,7 @@ USE THIS CHEMISTRY DISPENSER FOR MAPS SO THEY START AT 100 ENERGY
 	name = "All-In-One Grinder"
 	icon = 'icons/obj/kitchen.dmi'
 	icon_state = "juicer1"
-	layer = 2.9
+	layer = BELOW_OBJ_LAYER
 	density = 1
 	anchored = 1
 	use_power = 1
@@ -1232,30 +1232,30 @@ USE THIS CHEMISTRY DISPENSER FOR MAPS SO THEY START AT 100 ENERGY
 	var/list/blend_items = list (
 
 		//Sheets
-		/obj/item/stack/sheet/metal           = list("iron" = 20),
-		/obj/item/stack/sheet/mineral/plasma  = list("plasma" = 20),
-		/obj/item/stack/sheet/mineral/uranium = list("uranium" = 20),
-		/obj/item/stack/sheet/mineral/clown   = list("banana" = 20),
-		/obj/item/stack/sheet/mineral/silver  = list("silver" = 20),
-		/obj/item/stack/sheet/mineral/gold    = list("gold" = 20),
-		/obj/item/weapon/grown/nettle         = list("sacid" = 0),
-		/obj/item/weapon/grown/deathnettle    = list("pacid" = 0),
+		/obj/item/stack/sheet/metal           = list(IRON = 20),
+		/obj/item/stack/sheet/mineral/plasma  = list(PLASMA = 20),
+		/obj/item/stack/sheet/mineral/uranium = list(URANIUM = 20),
+		/obj/item/stack/sheet/mineral/clown   = list(BANANA = 20),
+		/obj/item/stack/sheet/mineral/silver  = list(SILVER = 20),
+		/obj/item/stack/sheet/mineral/gold    = list(GOLD = 20),
+		/obj/item/weapon/grown/nettle         = list(SACID = 0),
+		/obj/item/weapon/grown/deathnettle    = list(PACID = 0),
 		/obj/item/stack/sheet/charcoal        = list("charcoal" = 20),
 
 		//Blender Stuff
-		/obj/item/weapon/reagent_containers/food/snacks/grown/soybeans = list("soymilk" = -10), //I have no fucking idea what most of these numbers mean and I hate them.
-		/obj/item/weapon/reagent_containers/food/snacks/grown/tomato = list("ketchup" = -7),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/corn = list("cornoil" = 0),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/wheat = list("flour" = -5),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/ricestalk = list("rice" = -5),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/cherries = list("cherryjelly" = 0),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/plastellium = list("plasticide" = 5),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/soybeans = list(SOYMILK = -10), //I have no fucking idea what most of these numbers mean and I hate them.
+		/obj/item/weapon/reagent_containers/food/snacks/grown/tomato = list(KETCHUP = -7),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/corn = list(CORNOIL = 0),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/wheat = list(FLOUR = -5),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/ricestalk = list(RICE = -5),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/cherries = list(CHERRYJELLY = 0),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/plastellium = list(PLASTICIDE = 5),
 
-		/obj/item/seeds = list("blackpepper" = 5),
+		/obj/item/seeds = list(BLACKPEPPER = 5),
 
 
 		//archaeology!
-		/obj/item/weapon/rocksliver = list("ground_rock" = 30),
+		/obj/item/weapon/rocksliver = list(GROUND_ROCK = 30),
 
 		//All types that you can put into the grinder to transfer the reagents to the beaker. !Put all recipes above this.!
 		/obj/item/weapon/reagent_containers/pill = list(),
@@ -1265,18 +1265,18 @@ USE THIS CHEMISTRY DISPENSER FOR MAPS SO THEY START AT 100 ENERGY
 	var/list/juice_items = list (
 
 		//Juicer Stuff
-		/obj/item/weapon/reagent_containers/food/snacks/grown/tomato = list("tomatojuice" = 0),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/carrot = list("carrotjuice" = 0),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/berries = list("berryjuice" = 0),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/banana = list("banana" = 0),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/potato = list("potato" = 0),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/apple = list("applejuice" = 0),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/lemon = list("lemonjuice" = 0),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/orange = list("orangejuice" = 0),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/lime = list("limejuice" = 0),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/watermelon = list("watermelonjuice" = 0),
-		/obj/item/weapon/reagent_containers/food/snacks/watermelonslice = list("watermelonjuice" = 0),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/poisonberries = list("poisonberryjuice" = 0),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/tomato = list(TOMATOJUICE = 0),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/carrot = list(CARROTJUICE = 0),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/berries = list(BERRYJUICE = 0),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/banana = list(BANANA = 0),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/potato = list(POTATO = 0),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/apple = list(APPLEJUICE = 0),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/lemon = list(LEMONJUICE = 0),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/orange = list(ORANGEJUICE = 0),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/lime = list(LIMEJUICE = 0),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/watermelon = list(WATERMELONJUICE = 0),
+		/obj/item/weapon/reagent_containers/food/snacks/watermelonslice = list(WATERMELONJUICE = 0),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/poisonberries = list(POISONBERRYJUICE = 0),
 	)
 
 
@@ -1498,8 +1498,11 @@ USE THIS CHEMISTRY DISPENSER FOR MAPS SO THEY START AT 100 ENERGY
 	update_icon()
 
 /obj/machinery/reagentgrinder/AltClick()
-	if(!usr.incapacitated() && Adjacent(usr) && beaker && !(stat & (NOPOWER|BROKEN) && usr.dexterity_check()))
-		detach()
+	if(!usr.incapacitated() && Adjacent(usr) && beaker && !(stat & (NOPOWER|BROKEN) && usr.dexterity_check()) && !inuse)
+		if(holdingitems.len)
+			grind()
+		else
+			detach()
 		return
 	return ..()
 
@@ -1600,7 +1603,7 @@ USE THIS CHEMISTRY DISPENSER FOR MAPS SO THEY START AT 100 ENERGY
 	inuse = 1
 	spawn(60/speed_multiplier)
 		inuse = 0
-		interact(usr)
+		updateUsrDialog()
 	//Snacks and Plants
 	for (var/obj/item/weapon/reagent_containers/food/snacks/O in holdingitems)
 		if (beaker.reagents.total_volume >= beaker.reagents.maximum_volume)
@@ -1616,13 +1619,13 @@ USE THIS CHEMISTRY DISPENSER FOR MAPS SO THEY START AT 100 ENERGY
 			var/amount = allowed[r_id]
 			if(amount <= 0)
 				if(amount == 0)
-					if (O.reagents != null && O.reagents.has_reagent("nutriment"))
-						beaker.reagents.add_reagent(r_id, min(O.reagents.get_reagent_amount("nutriment"), space))
-						O.reagents.remove_reagent("nutriment", min(O.reagents.get_reagent_amount("nutriment"), space))
+					if (O.reagents != null && O.reagents.has_reagent(NUTRIMENT))
+						beaker.reagents.add_reagent(r_id, min(O.reagents.get_reagent_amount(NUTRIMENT), space))
+						O.reagents.remove_reagent(NUTRIMENT, min(O.reagents.get_reagent_amount(NUTRIMENT), space))
 				else
-					if (O.reagents != null && O.reagents.has_reagent("nutriment"))
-						beaker.reagents.add_reagent(r_id, min(round(O.reagents.get_reagent_amount("nutriment")*abs(amount)), space))
-						O.reagents.remove_reagent("nutriment", min(O.reagents.get_reagent_amount("nutriment"), space))
+					if (O.reagents != null && O.reagents.has_reagent(NUTRIMENT))
+						beaker.reagents.add_reagent(r_id, min(round(O.reagents.get_reagent_amount(NUTRIMENT)*abs(amount)), space))
+						O.reagents.remove_reagent(NUTRIMENT, min(O.reagents.get_reagent_amount(NUTRIMENT), space))
 
 			else
 				O.reagents.trans_id_to(beaker, r_id, min(amount, space))
@@ -1703,7 +1706,7 @@ USE THIS CHEMISTRY DISPENSER FOR MAPS SO THEY START AT 100 ENERGY
 	icon_state = "chemg_wired"
 	item_state = "chemg_wired"
 	desc = "A refurbished grenade-casing jury rigged to split simple chemicals."
-	w_class = 2.0
+	w_class = W_CLASS_SMALL
 	force = 2.0
 	var/list/beakers = new/list()
 	var/list/allowed_containers = list(/obj/item/weapon/reagent_containers/glass, /obj/item/weapon/reagent_containers/food/drinks/soda_cans/)
@@ -1945,44 +1948,44 @@ USE THIS CHEMISTRY DISPENSER FOR MAPS SO THEY START AT 100 ENERGY
 	//We want the all-in-one grinder audience
 
 	var/list/blend_items = list (
-		/obj/item/stack/sheet/metal           = list("iron",20),
-		/obj/item/stack/sheet/mineral/plasma  = list("plasma",20),
-		/obj/item/stack/sheet/mineral/uranium = list("uranium",20),
-		/obj/item/stack/sheet/mineral/clown   = list("banana",20),
-		/obj/item/stack/sheet/mineral/silver  = list("silver",20),
-		/obj/item/stack/sheet/mineral/gold    = list("gold",20),
-		/obj/item/weapon/grown/nettle         = list("sacid",10),
-		/obj/item/weapon/grown/deathnettle    = list("pacid",10),
+		/obj/item/stack/sheet/metal           = list(IRON,20),
+		/obj/item/stack/sheet/mineral/plasma  = list(PLASMA,20),
+		/obj/item/stack/sheet/mineral/uranium = list(URANIUM,20),
+		/obj/item/stack/sheet/mineral/clown   = list(BANANA,20),
+		/obj/item/stack/sheet/mineral/silver  = list(SILVER,20),
+		/obj/item/stack/sheet/mineral/gold    = list(GOLD,20),
+		/obj/item/weapon/grown/nettle         = list(SACID,10),
+		/obj/item/weapon/grown/deathnettle    = list(PACID,10),
 		/obj/item/stack/sheet/charcoal        = list("charcoal",20),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/soybeans   = list("soymilk",1),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/tomato     = list("ketchup",2),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/corn       = list("cornoil",3),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/wheat      = list("flour",5),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/ricestalk  = list("rice",5),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/cherries   = list("cherryjelly",1),
-		/obj/item/seeds	                      = list("blackpepper",5),
-		/obj/item/device/flashlight/flare     = list("sulfur",10),
-		/obj/item/stack/cable_coil            = list("copper", 10),
-		/obj/item/weapon/cell                 = list("lithium", 10),
-		/obj/item/clothing/head/butt          = list("mercury", 10),
-		/obj/item/weapon/rocksliver           = list("ground_rock",30),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/soybeans   = list(SOYMILK,1),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/tomato     = list(KETCHUP,2),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/corn       = list(CORNOIL,3),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/wheat      = list(FLOUR,5),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/ricestalk  = list(RICE,5),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/cherries   = list(CHERRYJELLY,1),
+		/obj/item/seeds	                      = list(BLACKPEPPER,5),
+		/obj/item/device/flashlight/flare     = list(SULFUR,10),
+		/obj/item/stack/cable_coil            = list(COPPER, 10),
+		/obj/item/weapon/cell                 = list(LITHIUM, 10),
+		/obj/item/clothing/head/butt          = list(MERCURY, 10),
+		/obj/item/weapon/rocksliver           = list(GROUND_ROCK,30),
 
 		//Recipes must include both variables!
 		/obj/item/weapon/reagent_containers/food = list("generic",0)
 	)
 
 	var/list/juice_items = list (
-		/obj/item/weapon/reagent_containers/food/snacks/grown/tomato = list("tomatojuice",0),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/carrot = list("carrotjuice",0),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/berries = list("berryjuice",0),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/banana = list("banana",0),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/potato = list("potato",0),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/lemon = list("lemonjuice",0),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/orange = list("orangejuice",0),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/lime = list("limejuice",0),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/watermelon = list("watermelonjuice",0),
-		/obj/item/weapon/reagent_containers/food/snacks/watermelonslice = list("watermelonjuice",0),
-		/obj/item/weapon/reagent_containers/food/snacks/grown/poisonberries = list("poisonberryjuice",0),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/tomato = list(TOMATOJUICE,0),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/carrot = list(CARROTJUICE,0),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/berries = list(BERRYJUICE,0),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/banana = list(BANANA,0),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/potato = list(POTATO,0),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/lemon = list(LEMONJUICE,0),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/orange = list(ORANGEJUICE,0),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/lime = list(LIMEJUICE,0),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/watermelon = list(WATERMELONJUICE,0),
+		/obj/item/weapon/reagent_containers/food/snacks/watermelonslice = list(WATERMELONJUICE,0),
+		/obj/item/weapon/reagent_containers/food/snacks/grown/poisonberries = list(POISONBERRYJUICE,0),
 	)
 
 

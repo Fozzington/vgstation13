@@ -210,11 +210,11 @@
 	set desc = "Allows to hide beneath tables or certain items. Toggled on or off."
 	set category = "Spiderbot"
 
-	if (layer != TURF_LAYER+0.2)
-		layer = TURF_LAYER+0.2
+	if (plane != HIDING_MOB_PLANE)
+		plane = HIDING_MOB_PLANE
 		to_chat(src, text("<span class='notice'>You are now hiding.</span>"))
 	else
-		layer = MOB_LAYER
+		plane = MOB_PLANE
 		to_chat(src, text("<span class='notice'>You have stopped hiding.</span>"))
 
 //Cannibalized from the parrot mob. ~Zuhayr
@@ -245,8 +245,6 @@
 	held_item = null
 	return 1
 
-	return
-
 /mob/living/simple_animal/spiderbot/verb_pickup()
 	return get_item()
 
@@ -264,7 +262,7 @@
 
 	var/list/items = list()
 	for(var/obj/item/I in view(1,src))
-		if(I.loc != src && I.w_class <= 2)
+		if(I.loc != src && I.w_class <= W_CLASS_SMALL)
 			items.Add(I)
 
 	var/obj/selection = input("Select an item.", "Pickup") in items
@@ -280,9 +278,11 @@
 		return 0
 
 	to_chat(src, "<span class='warning'>There is nothing of interest to take.</span>")
-	return 0
 
 /mob/living/simple_animal/spiderbot/examine(mob/user)
 	..()
 	if(src.held_item)
 		to_chat(user, "It is carrying \a [src.held_item] [bicon(src.held_item)].")
+
+/mob/living/simple_animal/spiderbot/CheckSlip()
+	return -1

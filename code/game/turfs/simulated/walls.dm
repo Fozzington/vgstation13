@@ -61,7 +61,7 @@
 		severity = 1.0
 	switch(severity)
 		if(1.0)
-			src.ChangeTurf(get_base_turf(src.z)) //You get NOTHING, you LOSE
+			src.ChangeTurf(get_underlying_turf()) //You get NOTHING, you LOSE
 			return
 		if(2.0)
 			if(prob(50))
@@ -78,9 +78,9 @@
 /turf/simulated/wall/mech_drill_act(severity)
 	return dismantle_wall()
 
-/turf/simulated/wall/blob_act()
+/turf/simulated/wall/blob_act(var/destroy = 0)
 	..()
-	if(prob(50) || rotting)
+	if(prob(50) || rotting || destroy)
 		dismantle_wall()
 
 /turf/simulated/wall/attack_animal(var/mob/living/simple_animal/M)
@@ -181,7 +181,8 @@
 
 			var/pdiff = performWallPressureCheck(src.loc)
 			if(pdiff)
-				message_admins("[user.real_name] ([formatPlayerPanel(user,user.ckey)]) broke a rotting wall with a pdiff of [pdiff] at [formatJumpTo(loc)]!")
+				investigation_log(I_ATMOS, "with a pdiff of [pdiff] broken after rotting by [user.real_name] ([formatPlayerPanel(user, user.ckey)]) at [formatJumpTo(get_turf(src))]!")
+				message_admins("\The [src] with a pdiff of [pdiff] has been broken after rotting by [user.real_name] ([formatPlayerPanel(user, user.ckey)]) at [formatJumpTo(get_turf(src))]!")
 			return
 
 	//THERMITE related stuff. Calls src.thermitemelt() which handles melting simulated walls and the relevant effects
@@ -219,8 +220,8 @@
 				"<span class='warning'>You hear welding noises.</span>")
 				var/pdiff = performWallPressureCheck(src.loc)
 				if(pdiff)
-					message_admins("[user.real_name] ([formatPlayerPanel(user,user.ckey)]) dismanted a wall with a pdiff of [pdiff] at [formatJumpTo(loc)]!")
-					log_admin("[user.real_name] ([user.ckey]) dismanted a wall with a pdiff of [pdiff] at [loc]!")
+					investigation_log(I_ATMOS, "with a pdiff of [pdiff] dismantled by [user.real_name] ([formatPlayerPanel(user, user.ckey)]) at [formatJumpTo(get_turf(src))]!")
+					message_admins("\The [src] with a pdiff of [pdiff] has been dismantled by [user.real_name] ([formatPlayerPanel(user, user.ckey)]) at [formatJumpTo(get_turf(src))]!")
 				dismantle_wall()
 		else
 			to_chat(user, "<span class='notice'>You need more welding fuel to complete this task.</span>")
@@ -243,8 +244,8 @@
 
 			var/pdiff = performWallPressureCheck(src.loc)
 			if(pdiff)
-				message_admins("[user.real_name] ([formatPlayerPanel(user,user.ckey)]) dismantled with a pdiff of [pdiff] at [formatJumpTo(loc)]!")
-				log_admin("[user.real_name] ([user.ckey]) dismantled with a pdiff of [pdiff] at [loc]!")
+				investigation_log(I_ATMOS, "with a pdiff of [pdiff] drilled through by [user.real_name] ([formatPlayerPanel(user, user.ckey)]) at [formatJumpTo(get_turf(src))]!")
+				message_admins("\The [src] with a pdiff of [pdiff] has been drilled through by [user.real_name] ([formatPlayerPanel(user, user.ckey)]) at [formatJumpTo(get_turf(src))]!")
 		return
 
 	else if(istype(W, /obj/item/mounted)) //If we place it, we don't want to have a silly message
@@ -271,7 +272,7 @@
 			O.pixel_y += rand(-10, 10)
 			O.anchored = 1
 			O.density = 1
-			O.layer = 5
+			O.plane = ABOVE_HUMAN_PLANE
 			O.mouse_opacity = 0
 
 /turf/simulated/wall/proc/thermitemelt(var/mob/user)
@@ -284,7 +285,7 @@
 	O.icon_state = "2"
 	O.anchored = 1
 	O.density = 1
-	O.layer = 5
+	O.plane = ABOVE_HUMAN_PLANE
 
 	var/cultwall = 0
 	if(istype(src, /turf/simulated/wall/cult))
@@ -298,7 +299,6 @@
 	var/turf/simulated/floor/F = src
 	if(!F)
 		if(O)
-			message_admins("[user.real_name] ([formatPlayerPanel(user,user.ckey)]) thermited a wall into space at [formatJumpTo(loc)]!")
 			visible_message("<span class='danger'>The thermite melts right through \the [src] and the underlying plating, leaving a gaping hole into deep space.</span>") //Good job you big damn hero
 			qdel(O)
 		return
@@ -307,7 +307,8 @@
 
 	var/pdiff = performWallPressureCheck(src.loc)
 	if(pdiff)
-		message_admins("[user.real_name] ([formatPlayerPanel(user,user.ckey)]) thermited a wall with a pdiff of [pdiff] at [formatJumpTo(loc)]!")
+		investigation_log(I_ATMOS, "with a pdiff of [pdiff] has been thermited through by [user.real_name] ([formatPlayerPanel(user, user.ckey)]) at [formatJumpTo(get_turf(src))]!")
+		message_admins("\The [src] with a pdiff of [pdiff] has been thermited by [user.real_name] ([formatPlayerPanel(user, user.ckey)]) at [formatJumpTo(get_turf(src))]!")
 
 	hotspot_expose(3000, 125, surfaces = 1) //Only works once when the thermite is created, but else it would need to not be an effect to work
 	spawn(100)
@@ -345,7 +346,7 @@
 
 /turf/simulated/wall/cultify()
 	ChangeTurf(/turf/simulated/wall/cult)
-	turf_animation('icons/effects/effects.dmi',"cultwall", 0, 0, MOB_LAYER-1)
+	turf_animation('icons/effects/effects.dmi',"cultwall", 0, 0, MOB_LAYER-1, anim_plane = TURF_PLANE)
 	return
 
 /turf/simulated/wall/attack_construct(mob/user as mob)
@@ -372,4 +373,4 @@
 	if(prob(70))
 		to_chat(H, "<span class='userdanger'>Ouch! That hurts!</span>")
 
-		H.apply_damage(rand(5,7), BRUTE, pick("r_leg", "l_leg", "r_foot", "l_foot"))
+		H.apply_damage(rand(5,7), BRUTE, pick(LIMB_RIGHT_LEG, LIMB_LEFT_LEG, LIMB_RIGHT_FOOT, LIMB_LEFT_FOOT))

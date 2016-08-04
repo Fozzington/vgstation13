@@ -12,7 +12,7 @@
 	throwforce = 5.0
 	throw_speed = 1
 	throw_range = 10
-	w_class = 3.0
+	w_class = W_CLASS_MEDIUM
 	w_type = RECYK_ELECTRONIC
 	melt_temperature = MELTPOINT_PLASTIC
 	origin_tech = "engineering=2;materials=4"
@@ -117,3 +117,10 @@
 			last = null
 	last = loaded.turf_place(get_turf(src.loc),user,turn(user.dir,180))
 	is_empty(user) //If we've run out, display message
+
+/obj/item/weapon/rcl/pre_loaded/New() //Comes preloaded with cable, for testing stuff
+	..()
+	loaded = new()
+	loaded.max_amount = max_amount
+	loaded.amount = max_amount
+	update_icon()

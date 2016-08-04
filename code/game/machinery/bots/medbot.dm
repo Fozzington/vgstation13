@@ -9,7 +9,6 @@
 	icon = 'icons/obj/aibots.dmi'
 	icon_state = "medibot0"
 	icon_initial = "medibot"
-	layer = 5.0
 	density = 0
 	anchored = 0
 	health = 20
@@ -32,11 +31,11 @@
 	var/heal_threshold = 10 //Start healing when they have this much damage in a category
 	var/use_beaker = 0 //Use reagents in beaker instead of default treatment agents.
 	//Setting which reagents to use to treat what by default. By id.
-	var/treatment_brute = "tricordrazine"
-	var/treatment_oxy = "tricordrazine"
-	var/treatment_fire = "tricordrazine"
-	var/treatment_tox = "tricordrazine"
-	var/treatment_virus = "spaceacillin"
+	var/treatment_brute = TRICORDRAZINE
+	var/treatment_oxy = TRICORDRAZINE
+	var/treatment_fire = TRICORDRAZINE
+	var/treatment_tox = TRICORDRAZINE
+	var/treatment_virus = SPACEACILLIN
 	var/declare_treatment = 0 //When attempting to treat a patient, should it notify everyone wearing medhuds?
 	var/shut_up = 0 //self explanatory :)
 	var/declare_crit = 1 //If active, the bot will transmit a critical patient alert to MedHUD users.
@@ -47,10 +46,10 @@
 	name = "Mysterious Medibot"
 	desc = "International Medibot of mystery."
 	skin = "bezerk"
-	treatment_oxy = "dexalinp"
-	treatment_brute = "bicaridine"
-	treatment_fire = "kelotane"
-	treatment_tox = "anti_toxin"
+	treatment_oxy = DEXALINP
+	treatment_brute = BICARIDINE
+	treatment_fire = KELOTANE
+	treatment_tox = ANTI_TOXIN
 
 /obj/item/weapon/firstaid_arm_assembly
 	name = "first aid/robot arm assembly"
@@ -60,7 +59,7 @@
 	var/build_step = 0
 	var/created_name = "Medibot" //To preserve the name if it's a unique medbot I guess
 	var/skin = null //Same as medbot, set to tox or ointment for the respective kits.
-	w_class = 3.0
+	w_class = W_CLASS_MEDIUM
 
 	New()
 		..()
@@ -77,13 +76,13 @@
 			src.overlays += image('icons/obj/aibots.dmi', "medskin_[src.skin]")
 			switch(src.skin)
 				if("tox")
-					treatment_tox = "anti_toxin"
+					treatment_tox = ANTI_TOXIN
 				if("ointment")
-					treatment_fire = "kelotane"
+					treatment_fire = KELOTANE
 				if("o2")
-					treatment_oxy = "dexalin"
+					treatment_oxy = DEXALIN
 		else
-			treatment_brute = "bicaridine"
+			treatment_brute = BICARIDINE
 		src.botcard = new /obj/item/weapon/card/id(src)
 		if(isnull(src.botcard_access) || (src.botcard_access.len < 1))
 			var/datum/job/doctor/J = new/datum/job/doctor
@@ -226,6 +225,7 @@
 		if(user.drop_item(W, src))
 			src.reagent_glass = W
 			to_chat(user, "<span class='notice'>You insert [W].</span>")
+			investigation_log(I_CHEMS, "was loaded with \a [W] by [key_name(user)], containing [W.reagents.get_reagent_ids(1)]")
 			src.updateUsrDialog()
 			return
 
@@ -416,7 +416,7 @@
 		reagent_id = "internal_beaker"
 
 	if(src.emagged == 2) //Emagged! Time to poison everybody.
-		reagent_id = "toxin"
+		reagent_id = TOXIN
 
 	var/virus = 0
 	for(var/datum/disease/D in C.viruses)

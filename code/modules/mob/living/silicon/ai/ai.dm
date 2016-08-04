@@ -72,7 +72,7 @@ var/list/ai_list = list()
 				pickedName = null
 	add_language(LANGUAGE_GALACTIC_COMMON, 1)
 	add_language(LANGUAGE_UNATHI, 1)
-	add_language(LANGUAGE_SIIK_TAJR, 1)
+	add_language(LANGUAGE_CATBEAST, 1)
 	add_language(LANGUAGE_SKRELLIAN, 1)
 	add_language(LANGUAGE_ROOTSPEAK, 1)
 	add_language(LANGUAGE_GUTTER, 1)
@@ -80,6 +80,7 @@ var/list/ai_list = list()
 	add_language(LANGUAGE_GREY, 1)
 	add_language(LANGUAGE_MONKEY, 1)
 	add_language(LANGUAGE_VOX, 1)
+	add_language(LANGUAGE_GOLEM, 1)
 	add_language(LANGUAGE_TRADEBAND, 1)
 	add_language(LANGUAGE_MOUSE, 1)
 	add_language(LANGUAGE_HUMAN, 1)
@@ -111,7 +112,6 @@ var/list/ai_list = list()
 
 	aiMulti = new(src)
 	aicamera = new/obj/item/device/camera/ai_camera(src)
-
 	if (istype(loc, /turf))
 		verbs.Add(/mob/living/silicon/ai/proc/ai_network_change, \
 		/mob/living/silicon/ai/proc/ai_statuschange, \
@@ -345,7 +345,9 @@ var/list/ai_list = list()
 /mob/living/silicon/ai/blob_act()
 	if(flags & INVULNERABLE)
 		return
-	if (stat != 2)
+	if (stat != DEAD)
+		..()
+		playsound(loc, 'sound/effects/blobattack.ogg',50,1)
 		adjustBruteLoss(60)
 		updatehealth()
 		return 1

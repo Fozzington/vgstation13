@@ -771,7 +771,8 @@ About the new airlock wires panel:
 							to_chat(usr, "<span class='warning'>Nope.</span>")
 							return 0
 						src.locked = 1
-						log_attack("<font color='red'>[usr] ([usr.ckey]) bolted the [name] at [x] [y] [z]</font>")
+						to_chat(usr, "The door is now bolted.")
+						investigation_log(I_WIRES, "|| bolted via robot interface by [key_name(usr)]")
 						update_icon()
 				if(5)
 					//un-electrify door
@@ -782,13 +783,15 @@ About the new airlock wires panel:
 							to_chat(usr, "<span class='warning'>Nope.</span>")
 							return 0
 						src.secondsElectrified = 0
-						log_attack("<font color='red'>[usr] ([usr.ckey]) un-electrified the [name] at [x] [y] [z]</font>")
+						to_chat(usr, "The door is now un-electrified.")
+						investigation_log(I_WIRES, "|| un-electrified via robot interface by [key_name(usr)]")
 					else if(src.secondsElectrified>0)
 						if(isobserver(usr) && !canGhostWrite(usr,src,"electrified"))
 							to_chat(usr, "<span class='warning'>Nope.</span>")
 							return 0
 						src.secondsElectrified = 0
-						log_attack("<font color='red'>[usr] ([usr.ckey]) un-electrified the [name] at [x] [y] [z]</font>")
+						to_chat(usr, "The door is now un-electrified.")
+						investigation_log(I_WIRES, "|| un-electrified via robot interface by [key_name(usr)]")
 
 				if(8)
 					// Safeties!  We don't need no stinking safeties!
@@ -799,7 +802,7 @@ About the new airlock wires panel:
 							to_chat(usr, "<span class='warning'>Nope.</span>")
 							return 0
 						safe = 0
-						log_attack("<font color='red'>[usr] ([usr.ckey]) removed the safeties on the [name] at [x] [y] [z]</font>")
+						investigation_log(I_WIRES, "|| safeties removed via robot interface by [key_name(usr)]")
 					else
 						to_chat(usr, text("Firmware reports safeties already overriden."))
 
@@ -814,7 +817,7 @@ About the new airlock wires panel:
 							to_chat(usr, "<span class='warning'>Nope.</span>")
 							return 0
 						normalspeed = 0
-						log_attack("<font color='red'>[usr] ([usr.ckey]) disrupted door timing on the [name] at [x] [y] [z]</font>")
+						investigation_log(I_WIRES, "|| door timing disrupted via robot interface by [key_name(usr)]")
 					else
 						to_chat(usr, text("Door timing circurity already accellerated."))
 
@@ -829,13 +832,13 @@ About the new airlock wires panel:
 							to_chat(usr, "<span class='warning'>Nope.</span>")
 							return 0
 						close()
-						log_attack("<font color='red'>[usr] ([usr.ckey]) closed the [name] at [x] [y] [z]</font>")
+						investigation_log(I_WIRES, "|| closed via robot interface by [key_name(usr)]")
 					else
 						if(isobserver(usr) && !canGhostWrite(usr,src,"opened"))
 							to_chat(usr, "<span class='warning'>Nope.</span>")
 							return 0
 						open()
-						log_attack("<font color='red'>[usr] ([usr.ckey]) opened the [name] at [x] [y] [z]</font>")
+						investigation_log(I_WIRES, "|| opened via robot interface by [key_name(usr)]")
 
 				if(10)
 					// Bolt lights
@@ -877,6 +880,7 @@ About the new airlock wires panel:
 								to_chat(usr, "<span class='warning'>Nope.</span>")
 								return 0
 							src.locked = 0
+							to_chat(usr, "The door is now unbolted.")
 							update_icon()
 						else
 							to_chat(usr, text("Cannot raise door bolts due to power failure.<br>\n"))
@@ -892,7 +896,7 @@ About the new airlock wires panel:
 					else
 						shockedby += text("\[[time_stamp()]\][usr](ckey:[usr.ckey])")
 						usr.attack_log += text("\[[time_stamp()]\] <font color='red'>Electrified the [name] at [x] [y] [z]</font>")
-						log_attack("<font color='red'>[usr] ([usr.ckey]) Temporarily electrified the [name] at [x] [y] [z]</font>")
+						investigation_log(I_WIRES, "|| temporarily electrified via robot interface by [key_name(usr)]")
 						if(isobserver(usr) && !canGhostWrite(usr,src,"electrified (30sec)"))
 							to_chat(usr, "<span class='warning'>Nope.</span>")
 							return 0
@@ -915,7 +919,8 @@ About the new airlock wires panel:
 					else
 						shockedby += text("\[[time_stamp()]\][usr](ckey:[usr.ckey])")
 						usr.attack_log += text("\[[time_stamp()]\] <font color='red'>Electrified the [name] at [x] [y] [z]</font>")
-						log_attack("<font color='red'>[usr] ([usr.ckey]) Electrified the [name] at [x] [y] [z]</font>")
+						investigation_log(I_WIRES, "|| electrified via robot interface by [key_name(usr)]")
+						to_chat(usr, "The door is now electrified indefinitely.")
 						if(isobserver(usr) && !canGhostWrite(usr,src,"electrified (permanent)"))
 							to_chat(usr, "<span class='warning'>Nope.</span>")
 							return 0
@@ -958,13 +963,13 @@ About the new airlock wires panel:
 							to_chat(usr, "<span class='warning'>Nope.</span>")
 							return 0
 						open()
-						log_attack("<font color='red'>[usr] ([usr.ckey]) opened the [name] at [x] [y] [z]</font>")
+						investigation_log(I_WIRES, "|| opened via robot interface by [key_name(usr)]")
 					else
 						if(isobserver(usr) && !canGhostWrite(usr,src,"closed"))
 							to_chat(usr, "<span class='warning'>Nope.</span>")
 							return 0
 						close()
-						log_attack("<font color='red'>[usr] ([usr.ckey]) closed the [name] at [x] [y] [z]</font>")
+						investigation_log(I_WIRES, "|| closed via robot interface by [key_name(usr)]")
 
 				if(10)
 					// Bolt lights
@@ -1073,14 +1078,14 @@ About the new airlock wires panel:
 					welded = null
 
 				update_icon()
-	else if (iswirecutter(I))
-		if (!operating && panel_open)
-			wires.Interact(user)
 	else if (ismultitool(I))
 		if (!operating)
 			if(panel_open) wires.Interact(user)
 			else update_multitool_menu(user)
 		attack_hand(user)
+	else if (iswiretool(I))
+		if (!operating && panel_open)
+			wires.Interact(user)
 	else if(iscrowbar(I) || istype(I, /obj/item/weapon/fireaxe) )
 		if(src.busy) return
 		src.busy = 1

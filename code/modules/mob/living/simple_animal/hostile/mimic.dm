@@ -164,8 +164,12 @@ var/global/list/crate_mimic_disguises = list(\
 	.=..()
 
 /mob/living/simple_animal/hostile/mimic/crate/Destroy()
-	Die()
-	
+	if(copied_object)
+		var/obj/structure/C = new copied_object(get_turf(src))
+		//Drop all loot!
+		for(var/atom/movable/AM in src)
+			AM.forceMove(C)
+
 	..()
 
 /mob/living/simple_animal/hostile/mimic/crate/initialize()
@@ -175,14 +179,6 @@ var/global/list/crate_mimic_disguises = list(\
 		if(I.anchored || I.density) continue
 
 		I.forceMove(src)
-
-/mob/living/simple_animal/hostile/mimic/crate/Die()
-	if(copied_object)
-		var/obj/structure/C = new copied_object(get_turf(src))
-		//Drop all loot!
-		for(var/atom/movable/AM in src)
-			AM.loc = C
-	..()
 
 /mob/living/simple_animal/hostile/mimic/crate/attackby(obj/W, mob/user)
 	if(angry) //If we're angry - proceed as normal
@@ -354,7 +350,7 @@ var/global/list/item_mimic_disguises = list(
 				/obj/item/device/aicard, /obj/item/device/analyzer, /obj/item/device/assembly/igniter, /obj/item/device/camera, /obj/item/device/codebreaker, /obj/item/device/device_analyser,\
 				/obj/item/device/flash, /obj/item/device/flashlight, /obj/item/device/hailer, /obj/item/device/material_synth, /obj/item/device/megaphone, /obj/item/device/paicard,\
 				/obj/item/device/pda/clown, /obj/item/device/rcd/matter/engineering, /obj/item/device/radio, /obj/item/device/robotanalyzer, /obj/item/device/soulstone,\
-				/obj/item/device/soundsynth, /obj/item/device/violin, /obj/item/device/wormhole_jaunter, /obj/item/weapon/gun/portalgun, /obj/item/target), //Common items
+				/obj/item/device/soundsynth, /obj/item/device/instrument/violin, /obj/item/device/wormhole_jaunter, /obj/item/weapon/gun/portalgun, /obj/item/target), //Common items
 
 	"medbay" = list(/obj/item/weapon/circular_saw, /obj/item/weapon/melee/defibrillator, /obj/item/weapon/surgicaldrill, /obj/item/weapon/hemostat, /obj/item/weapon/dnainjector/nofail/hulkmut,\
 				/obj/item/weapon/bonesetter, /obj/item/weapon/autopsy_scanner, /obj/item/weapon/FixOVein, /obj/item/stack/medical/ointment, /obj/item/weapon/storage/firstaid,\
@@ -384,7 +380,7 @@ var/global/list/item_mimic_disguises = list(
 	"botany" = existing_typesof(/obj/item/weapon/reagent_containers/food/snacks/grown), //All grown items
 
 	//Nuke, nuke disk, all coins, all minerals (except for those with no icons)
-	"vault" = list(/obj/machinery/nuclearbomb, /obj/item/weapon/disk/nuclear) + typesof(/obj/item/weapon/coin) + typesof(/obj/item/stack/sheet/mineral) - /obj/item/stack/sheet/mineral - /obj/item/stack/sheet/mineral/enruranium,
+	"vault" = list(/obj/machinery/nuclearbomb, /obj/item/weapon/disk/nuclear) + typesof(/obj/item/weapon/coin) + typesof(/obj/item/stack/sheet/mineral) - /obj/item/stack/sheet/mineral,
 
 	"chapel" = list(/obj/item/weapon/storage/bible, /obj/item/clothing/head/chaplain_hood, /obj/item/clothing/head/helmet/space/plasmaman/chaplain, /obj/item/clothing/suit/chaplain_hoodie, /obj/item/clothing/suit/space/plasmaman/chaplain,\
 				/obj/item/device/pda/chaplain, /obj/item/weapon/nullrod, /obj/item/weapon/reagent_containers/food/drinks/bottle/holywater, /obj/item/weapon/staff), //Chaplain garb, null rod, bible, holy water

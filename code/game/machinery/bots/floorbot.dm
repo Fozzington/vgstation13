@@ -8,7 +8,7 @@
 	throwforce = 10.0
 	throw_speed = 2
 	throw_range = 5
-	w_class = 3.0
+	w_class = W_CLASS_MEDIUM
 	flags = 0
 	var/created_name = "Floorbot"
 
@@ -21,7 +21,7 @@
 	throwforce = 10.0
 	throw_speed = 2
 	throw_range = 5
-	w_class = 3.0
+	w_class = W_CLASS_MEDIUM
 	flags = 0
 	var/created_name = "Floorbot"
 
@@ -35,7 +35,6 @@ var/global/list/floorbot_targets=list()
 	icon = 'icons/obj/aibots.dmi'
 	icon_state = "floorbot0"
 	icon_initial = "floorbot"
-	layer = 5.0
 	density = 0
 	anchored = 0
 	health = 25

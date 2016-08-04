@@ -3,7 +3,7 @@
 	desc = "A simple key."
 	icon = 'icons/obj/vehicles.dmi'
 	icon_state = "keys"
-	w_class = 1
+	w_class = W_CLASS_TINY
 	var/obj/structure/bed/chair/vehicle/paired_to = null
 	var/vin = null
 
@@ -29,6 +29,8 @@
 	var/max_health = 100
 	var/destroyed = 0
 	var/inertia_dir = 0
+	plane = ABOVE_HUMAN_PLANE
+	layer = VEHICLE_LAYER
 
 	var/can_spacemove = 0
 	var/ethereal = 0
@@ -64,11 +66,6 @@
 	if(empstun < 0)
 		empstun = 0
 
-/obj/structure/bed/chair/vehicle/buckle_mob(mob/M as mob, mob/user as mob)
-	if(isanimal(M)) return //Animals can't buckle
-
-	..()
-
 /obj/structure/bed/chair/vehicle/attackby(obj/item/W, mob/user)
 	if (istype(W, /obj/item/weapon/weldingtool))
 		var/obj/item/weapon/weldingtool/WT = W
@@ -92,8 +89,7 @@
 	if(!keytype)
 		return 1
 	if(mykey)
-		return user.l_hand == mykey || user.r_hand == mykey
-	return 0
+		return user.is_holding_item(mykey)
 
 /obj/structure/bed/chair/vehicle/relaymove(var/mob/living/user, direction)
 	if(user.incapacitated()  || destroyed)
@@ -144,7 +140,6 @@
 	if(istype(src.loc, /turf/space) && (!src.Process_Spacemove(0, user)))
 		var/turf/space/S = src.loc
 		S.Entered(src)*/
-	return 0
 
 /obj/structure/bed/chair/vehicle/proc/Process_Spacemove(var/check_drift = 0, mob/user)
 
@@ -222,6 +217,12 @@
 /obj/structure/bed/chair/vehicle/proc/can_buckle(mob/M, mob/user)
 	if(M != user || !ishuman(user) || !Adjacent(user) || user.restrained() || user.lying || user.stat || user.locked_to || destroyed || occupant)
 		return 0
+	if(ishuman(M))
+		var/mob/living/carbon/human/H = M
+		if(H.mind && H.mind.special_role == HIGHLANDER)
+			if(user == M)
+				to_chat(user, "<span class='warning'>A true highlander has no need for a mount!</span>")
+			return 0
 	return 1
 
 /obj/structure/bed/chair/vehicle/buckle_mob(mob/M, mob/user)
@@ -238,9 +239,11 @@
 
 /obj/structure/bed/chair/vehicle/handle_layer()
 	if(dir == SOUTH)
-		layer = FLY_LAYER
+		plane = ABOVE_HUMAN_PLANE
+		layer = VEHICLE_LAYER
 	else
-		layer = OBJ_LAYER
+		plane = OBJ_PLANE
+		layer = ABOVE_OBJ_LAYER
 
 /obj/structure/bed/chair/vehicle/update_dir()
 	. = ..()

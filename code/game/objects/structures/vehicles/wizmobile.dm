@@ -24,7 +24,7 @@
 	can_spacemove=1
 	//ethereal=1 // NERF
 	var/can_move=1
-	layer = FLY_LAYER
+	plane = ABOVE_HUMAN_PLANE
 
 	var/datum/effect/effect/system/trail/firebird/ion_trail
 

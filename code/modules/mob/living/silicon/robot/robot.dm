@@ -153,7 +153,7 @@
 	add_language(LANGUAGE_CLATTER, 0)
 	add_language(LANGUAGE_MONKEY, 0)
 	add_language(LANGUAGE_UNATHI, 0)
-	add_language(LANGUAGE_SIIK_TAJR, 0)
+	add_language(LANGUAGE_CATBEAST, 0)
 	add_language(LANGUAGE_SKRELLIAN, 0)
 	add_language(LANGUAGE_GUTTER, 0)
 	add_language(LANGUAGE_MONKEY, 0)
@@ -173,7 +173,7 @@
 		radio.insert_key(new/obj/item/device/encryptionkey/headset_sec(radio))
 		base_icon = icon_state
 		icon_state = "droid-combat"
-		overlays -= "eyes"
+		overlays -= image(icon = icon, icon_state = "eyes")
 		base_icon = icon_state
 		updateicon()
 
@@ -223,7 +223,7 @@
 		sensor = null
 
 /proc/getAvailableRobotModules()
-	var/list/modules = list("Standard", "Engineering", "Medical", "Miner", "Janitor", "Service", "Security")
+	var/list/modules = list("Standard", "Engineering", "Medical", "Supply", "Janitor", "Service", "Security")
 	if(security_level == SEC_LEVEL_RED) //Add crisis to this check if you want to make it available at an admin's whim
 		modules+="Combat"
 	return modules
@@ -257,6 +257,7 @@
 			module_sprites["Sleek"] = "sleekstandard"
 			module_sprites["#11"] = "servbot"
 			module_sprites["Spider"] = "spider-standard"
+			module_sprites["Polar"] = "kodiak-standard"
 			speed = 0
 
 		if("Service")
@@ -271,9 +272,10 @@
 			module_sprites["Marina-SV"] = "marinaSV"
 			module_sprites["Sleek"] = "sleekservice"
 			module_sprites["#27"] = "servbot-service"
+			module_sprites["Teddy"] = "kodiak-service"
 			speed = 0
 
-		if("Miner")
+		if("Supply")
 			module = new /obj/item/weapon/robot_module/miner(src)
 			radio.insert_key(new/obj/item/device/encryptionkey/headset_cargo(radio))
 			if(camera && "Robots" in camera.network)
@@ -312,6 +314,7 @@
 			module_sprites["Securitron"] = "securitron"
 			module_sprites["Marina-SC"] = "marinaSC"
 			module_sprites["#9"] = "servbot-sec"
+			module_sprites["Kodiak"] = "kodiak-sec"
 			to_chat(src, "<span class='warning'><big><b>Just a reminder, by default you do not follow space law, you follow your lawset</b></big></span>")
 			speed = 0
 
@@ -352,6 +355,7 @@
 			module_sprites["Marina-CB"] = "marinaCB"
 			module_sprites["Squadbot"] = "squats"
 			module_sprites["#41"] = "servbot-combat"
+			module_sprites["Grizzly"] = "kodiak-combat"
 			speed = -1
 
 	//Custom_sprite check and entry
@@ -521,7 +525,9 @@
 /mob/living/silicon/robot/blob_act()
 	if(flags & INVULNERABLE)
 		return
-	if (stat != 2)
+	..()
+	playsound(loc, 'sound/effects/blobattack.ogg',50,1)
+	if (stat != DEAD)
 		adjustBruteLoss(60)
 		updatehealth()
 		return 1
@@ -873,7 +879,7 @@
 			C.wrapped = W
 			C.install()
 
-	else if (iswirecutter(W) || istype(W, /obj/item/device/multitool))
+	else if (iswiretool(W))
 		if (wiresexposed)
 			wires.Interact(user)
 		else
@@ -912,18 +918,7 @@
 
 	else if(istype(W, /obj/item/borg/upgrade/))
 		var/obj/item/borg/upgrade/U = W
-		if(!opened)
-			to_chat(user, "You must access the borgs internals!")
-		else if(!src.module && U.require_module)
-			to_chat(user, "The borg must choose a module before he can be upgraded!")
-		else if(U.locked)
-			to_chat(user, "The upgrade is locked and cannot be used yet!")
-		else
-			if(U.action(src))
-				to_chat(user, "You apply the upgrade to [src]!")
-				user.drop_item(U, src)
-			else
-				to_chat(user, "Upgrade error!")
+		U.attempt_action(src,user)
 
 	else if(istype(W, /obj/item/device/camera_bug))
 		help_shake_act(user)
@@ -1029,6 +1024,7 @@
 		for(var/mob/O in viewers(src, null))
 			if ((O.client && !( O.blinded )))
 				O.show_message(text("<span class='danger'>The [M.name] glomps []!</span>", src), 1)
+		add_logs(M, src, "glomped on", 0)
 
 		var/damage = rand(1, 3)
 
@@ -1156,27 +1152,29 @@
 
 	overlays.len = 0
 	if(stat == 0 && cell != null)
-		overlays += image(icon,"eyes-[icon_state]", LIGHTING_LAYER + 1)
+		var/image/eyes = image(icon,"eyes-[icon_state]", ABOVE_LIGHTING_LAYER)
+		eyes.plane = LIGHTING_PLANE
+		overlays += eyes
 
 	if(opened)
 		if(custom_sprite)//Custom borgs also have custom panels, heh
 			if(wiresexposed)
-				overlays += "[src.ckey]-openpanel +w"
+				overlays += image(icon = icon, icon_state = "[src.ckey]-openpanel +w")
 			else if(cell)
-				overlays += "[src.ckey]-openpanel +c"
+				overlays += image(icon = icon, icon_state = "[src.ckey]-openpanel +c")
 			else
-				overlays += "[src.ckey]-openpanel -c"
+				overlays += image(icon = icon, icon_state = "[src.ckey]-openpanel -c")
 		else
 			if(wiresexposed)
-				overlays += "ov-openpanel +w"
+				overlays += image(icon = icon, icon_state = "ov-openpanel +w")
 			else if(cell)
-				overlays += "ov-openpanel +c"
+				overlays += image(icon = icon, icon_state = "ov-openpanel +c")
 			else
-				overlays += "ov-openpanel -c"
+				overlays += image(icon = icon, icon_state = "ov-openpanel -c")
 
 	// WHY THE FUCK DOES IT HAVE A SHIELD, ARE YOU STUPID
 	if(module_active && istype(module_active,/obj/item/borg/combat/shield))
-		overlays += "[icon_state]-shield"
+		overlays += image(icon = icon, icon_state = "[icon_state]-shield")
 
 	if(base_icon)
 		// no no no no
@@ -1434,6 +1432,10 @@
 
 	if(attack_delayer.blocked()) return
 
+	if(isVentCrawling())
+		to_chat(src, "<span class='danger'>Not while we're vent crawling!</span>")
+		return
+
 	if(stat == DEAD) return
 	var/obj/item/W = get_active_hand()
 	if (W)
@@ -1493,7 +1495,7 @@
 		return
 
 
-	overlays -= "eyes"
+	overlays -= image(icon = icon, icon_state = "eyes")
 	base_icon = icon_state
 	updateicon()
 

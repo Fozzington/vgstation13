@@ -3,7 +3,7 @@
 
 	var/w_type = NOT_RECYCLABLE  // Waste category for sorters. See setup.dm
 
-	layer = 3
+	plane = OBJ_PLANE
 
 	var/last_move = null //Direction in which this atom last moved
 	var/last_moved = 0   //world.time when this atom last moved
@@ -65,7 +65,14 @@
 				returnToPool(VH)
 	gcDestroyed = "Bye, world!"
 	tag = null
+
+	var/turf/un_opaque
+	if (opacity && isturf(loc))
+		un_opaque = loc
+
 	loc = null
+	if (un_opaque)
+		un_opaque.recalc_atom_opacity()
 
 	for (var/atom/movable/AM in locked_atoms)
 		unlock_atom(AM)
@@ -154,6 +161,8 @@
 //	if(!loc || (loc == oldloc && oldloc != newLoc))
 //		last_move = 0
 //		return
+
+	update_client_hook(loc)
 
 	if(tether && can_pull_tether && !tether_pull)
 		tether.follow(src,oldloc)
@@ -283,19 +292,34 @@
 			var/area/A = get_area_master(destination)
 			A.Entered(src)
 
-		for(var/atom/movable/AM in loc)
-			AM.Crossed(src,no_tp)
+			for(var/atom/movable/AM in loc)
+				AM.Crossed(src,no_tp)
 
 
 		for(var/atom/movable/AM in locked_atoms)
 			var/datum/locking_category/category = locked_atoms[AM]
 			category.update_lock(AM)
 
+		update_client_hook(destination)
 
 		// Update on_moved listeners.
 		INVOKE_EVENT(on_moved,list("loc"=loc))
 		return 1
 	return 0
+
+/atom/movable/proc/update_client_hook(atom/destination)
+	if(locate(/mob) in src)
+		for(var/client/C in parallax_on_clients)
+			if((get_turf(C.eye) == destination) && (C.mob.hud_used))
+				C.mob.hud_used.update_parallax_values()
+
+/mob/update_client_hook(atom/destination)
+	if(locate(/mob) in src)
+		for(var/client/C in parallax_on_clients)
+			if((get_turf(C.eye) == destination) && (C.mob.hud_used))
+				C.mob.hud_used.update_parallax_values()
+	else if(client && hud_used)
+		hud_used.update_parallax_values()
 
 /atom/movable/proc/forceEnter(atom/destination)
 	if(destination)
@@ -310,6 +334,7 @@
 		for(var/atom/movable/AM in locked_atoms)
 			AM.forceMove(loc)
 
+		update_client_hook(destination)
 		return 1
 	return 0
 
@@ -505,7 +530,7 @@
 // SINGULOTH PULL REFACTOR
 /////////////////////////////
 /atom/movable/proc/canSingulothPull(var/obj/machinery/singularity/singulo)
-	return singuloCanEat()
+	return 1
 
 /atom/movable/proc/say_understands(var/mob/other)
 	return 1

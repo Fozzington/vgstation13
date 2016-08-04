@@ -9,7 +9,7 @@
 	anchored = 0.0
 	origin_tech = "materials=2"
 	var/darts = 5
-	w_class = 2
+	w_class = W_CLASS_SMALL
 
 /obj/item/weapon/dart_cartridge/update_icon()
 	if(!darts)
@@ -56,6 +56,7 @@
 			var/obj/item/weapon/reagent_containers/glass/beaker/B = new(src)
 			B.reagents.add_reagent(chem, 50)
 			beakers += B
+			mixing += B
 	cartridge = new /obj/item/weapon/dart_cartridge(src)
 	update_icon()
 
@@ -101,6 +102,7 @@
 
 		if(user.drop_item(B, src))
 			beakers += B
+			mixing += B
 			to_chat(user, "<span class='notice'>You slot [B] into [src].</span>")
 			src.updateUsrDialog()
 
@@ -217,8 +219,9 @@
 
 		return
 
-/obj/item/weapon/gun/dartgun/afterattack(obj/target, mob/user , flag)
-	if(!isturf(target.loc) || target == user) return
+/obj/item/weapon/gun/dartgun/afterattack(atom/target as mob|obj|turf|area, mob/user , flag)
+	if(/*!isturf(target.loc) || */target == user)
+		return
 	..()
 
 /obj/item/weapon/gun/dartgun/can_hit(var/mob/living/target as mob, var/mob/living/user as mob)
@@ -322,7 +325,7 @@
 	desc = "A small gas-powered dartgun, fitted for nonhuman hands."
 
 /obj/item/weapon/gun/dartgun/vox/medical
-	starting_chems = list("kelotane","bicaridine","anti_toxin")
+	starting_chems = list(KELOTANE,BICARIDINE,ANTI_TOXIN)
 
 /obj/item/weapon/gun/dartgun/vox/raider
-	starting_chems = list("stoxin","chloralhydrate")
+	starting_chems = list(STOXIN,CHLORALHYDRATE)

@@ -9,7 +9,7 @@
 	recoil = 1
 	slot_flags = SLOT_BELT
 	flags = FPRINT | NOREACT
-	w_class = 3
+	w_class = W_CLASS_MEDIUM
 	fire_delay = 1
 	fire_sound = 'sound/weapons/shotgun.ogg'
 	var/hard = 1 //When toggled on, the gun's shots will deal damage. When off, they deal no damage, but deliver five times the reagents.
@@ -21,7 +21,7 @@
 /obj/item/weapon/gun/siren/New()
 	..()
 	create_reagents(max_reagents)
-	reagents.add_reagent("water", max_reagents)
+	reagents.add_reagent(WATER, max_reagents)
 
 /obj/item/weapon/gun/siren/verb/flush_reagents()
 	set name = "Flush siren"

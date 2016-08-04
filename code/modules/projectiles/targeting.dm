@@ -2,7 +2,7 @@
 	set name = "Toggle Firerate"
 	set category = "Object"
 	firerate = !firerate
-	if (firerate == 0)
+	if (firerate == 1)
 		to_chat(loc, "You will now continue firing when your target moves.")
 	else
 		to_chat(loc, "You will now only fire once, then lower your aim, when your target moves.")
@@ -25,8 +25,8 @@
 		user.client.remove_gun_icons()
 	return ..()
 
-/obj/item/weapon/gun/equipped(var/mob/user, var/slot)
-	if (slot != slot_l_hand && slot != slot_r_hand)
+/obj/item/weapon/gun/equipped(var/mob/user, var/slot, hand_index)
+	if(!hand_index)
 		stop_aim()
 		if (user.client)
 			user.client.remove_gun_icons()

@@ -8,7 +8,7 @@
 	throwforce = 10.0
 	throw_speed = 2
 	throw_range = 5
-	w_class = 3.0
+	w_class = W_CLASS_MEDIUM
 	flags = 0
 	var/created_name = "Cleanbot"
 
@@ -20,7 +20,6 @@
 	icon = 'icons/obj/aibots.dmi'
 	icon_state = "cleanbot0"
 	icon_initial = "cleanbot"
-	layer = 5.0
 	density = 0
 	anchored = 0
 	//weight = 1.0E7
@@ -121,7 +120,7 @@ text("<A href='?src=\ref[src];operation=oddbutton'>[src.oddbutton ? "Yes" : "No"
 				turn_off()
 			else
 				turn_on()
-		if("blood")
+		if(BLOOD)
 			src.blood = !src.blood
 			src.get_targets()
 			src.updateUsrDialog()

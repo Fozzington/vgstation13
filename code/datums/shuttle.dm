@@ -265,23 +265,6 @@
 	if(broadcast)
 		broadcast.announce("The shuttle has received your message and will be sent [time].")
 
-	//If moving to another zlevel, check for items which can't leave the zlevel (nuke disk, primarily)
-	if(linked_port.z != D.z)
-		var/atom/A = forbid_movement()
-		if( A )
-			if(cant_leave_zlevel[A.type])
-				if(broadcast)
-					broadcast.announce("ERROR: [cant_leave_zlevel[A.type]]")
-				else if(user)
-					to_chat(user, cant_leave_zlevel[A.type])
-				return 0
-			else
-				if(broadcast)
-					broadcast.announce("ERROR: [A.name] is preventing the shuttle from departing.")
-				else if(user)
-					to_chat(user, "[A.name] is preventing the shuttle from departing.")
-				return 0
-
 	destination_port = D
 	last_moved = world.time
 	moving = 1
@@ -289,6 +272,24 @@
 	log_game("[usr ? key_name(usr) : "Something"] sent [name] ([type]) to [D.areaname]")
 
 	spawn(get_pre_flight_delay())
+		//If moving to another zlevel, check for items which can't leave the zlevel (nuke disk, primarily)
+		if(linked_port.z != D.z)
+			var/atom/A = forbid_movement()
+			if( A )
+				if(cant_leave_zlevel[A.type])
+					if(broadcast)
+						broadcast.announce("ERROR: [cant_leave_zlevel[A.type]]")
+					else if(user)
+						to_chat(user, cant_leave_zlevel[A.type])
+				else
+					if(broadcast)
+						broadcast.announce("ERROR: [A.name] is preventing the shuttle from departing.")
+					else if(user)
+						to_chat(user, "[A.name] is preventing the shuttle from departing.")
+				moving = 0
+				destination_port = null
+				return 0
+
 		if(transit_port && get_transit_delay())
 			if(broadcast)
 				broadcast.announce( "The shuttle has departed and is now moving towards [D.areaname]." )
@@ -674,7 +675,7 @@
 		turfs_to_update += new_turf
 
 		//Delete the old turf
-		var/replacing_turf_type = get_base_turf(old_turf.z)
+		var/replacing_turf_type = old_turf.get_underlying_turf()
 		var/obj/docking_port/destination/D = linked_port.docked_with
 
 		if(D && istype(D)) replacing_turf_type = D.base_turf_type
@@ -688,7 +689,7 @@
 				old_turf.icon_state = D.base_turf_icon_state
 
 		if(istype(old_turf,/turf/space))
-			old_turf.lighting_clear_overlays() //A horrible band-aid fix for lighting overlays appearing over space
+			old_turf.lighting_clear_overlay() //A horrible band-aid fix for lighting overlays appearing over space
 
 	//Update doors
 	if(turfs_to_update.len)
