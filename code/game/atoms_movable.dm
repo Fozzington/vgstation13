@@ -43,7 +43,7 @@
 	// Can we send relaymove() if gravity is disabled or we are in space? (Should be handled by relaymove, but shitcode abounds)
 	var/internal_gravity = 0
 
-	step_size = 1 //honk
+	step_size = 4 //That's a bit more reasonable.
 
 /atom/movable/New()
 	. = ..()
