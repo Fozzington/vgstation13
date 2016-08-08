@@ -616,7 +616,7 @@ Thanks.
 			stop_pulling()
 			return
 
-		var/mob/living/M = pulling
+		//var/mob/living/M = pulling
 		if (!restrained())
 
 			if(pulling)
